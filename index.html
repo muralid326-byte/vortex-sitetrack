@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Vortex SiteTrack</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1C2431">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SiteTrack">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#FFFFFF; --panel:#FFFFFF; --panel2:#F5F7FA; --line:#E2E6EC;
+  --text:#1C2431; --muted:#6A7482; --red2:#D71920; --navy:#1C2431; --amber:#D71920;
+  --green:#1E8E4D; --red:#C7402D; --blue:#2563C4;
+  --radius:10px; --shadow:0 1px 3px rgba(22,53,94,.08);
+  --display:'Saira Condensed',sans-serif; --body:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.5;min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:15px;background:#fff;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 11px;width:100%}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+label{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 5px;font-weight:500}
+h1,h2,h3{font-family:var(--display);letter-spacing:.03em;text-transform:uppercase;color:var(--navy)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 60px}
+.hidden{display:none!important}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.btn{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:600;font-size:14px}
+.btn:hover{filter:brightness(1.15)}
+.btn.sec{background:#fff;color:var(--navy);border:1px solid var(--line)}
+.btn.sec:hover{border-color:var(--navy)}
+.btn.danger{background:#fff;color:var(--red);border:1px solid var(--red)}
+.btn.sm{padding:6px 12px;font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px}
+.msg{padding:10px 14px;border-radius:8px;font-size:14px;margin:12px 0}
+.msg.err{background:#FBEDEA;color:#96301F;border:1px solid #EFC5BC}
+.msg.ok{background:#EAF6EE;color:#166237;border:1px solid #BFE3CC}
+header{border-bottom:3px solid var(--amber);background:#fff;position:sticky;top:0;z-index:20;box-shadow:var(--shadow)}
+.hbar{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo img{height:38px;width:auto;display:block}
+.logo .fallback{font-family:var(--display);font-size:22px;letter-spacing:.05em;color:var(--navy);font-weight:700}
+.logo .fallback span{color:var(--amber)}
+.logo .app{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);border-left:1px solid var(--line);padding-left:10px;text-transform:uppercase}
+.rolebadge{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);border-radius:99px;padding:2px 10px;color:var(--muted);text-transform:uppercase}
+.hbar .spacer{flex:1}
+.uname{font-size:13px;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;max-width:1180px;margin:14px auto 20px;padding:0 16px;flex-wrap:wrap}
+nav.tabs button{background:#fff;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:8px 16px;font-size:14px;font-weight:500}
+nav.tabs button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,#fff 0%,#F1F4F9 100%)}
+.login-card{width:100%;max-width:400px}
+.login-card .hazard{height:8px;border-radius:4px 4px 0 0;background:repeating-linear-gradient(45deg,var(--amber) 0 14px,var(--navy) 14px 28px)}
+.login-card .inner{background:#fff;border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:28px;box-shadow:var(--shadow)}
+.login-card .logo{justify-content:center;margin-bottom:8px}
+.login-card .sub{font-size:13px;color:var(--muted);margin-bottom:22px;text-align:center}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.stat .v{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1.1;color:var(--navy)}
+.stat .l{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:2px solid var(--line)}
+.tbl td{padding:9px 10px;border-bottom:1px solid #EDF0F4;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .num{font-family:var(--mono);text-align:right}
+.tbl tfoot td{border-top:2px solid var(--line);font-weight:600;background:var(--panel2)}
+.tblwrap{overflow-x:auto}
+.pill{font-family:var(--mono);font-size:11px;border-radius:99px;padding:2px 9px;letter-spacing:.05em}
+.pill.ongoing{background:#E4EDFB;color:#1D4E9E}
+.pill.completed{background:#E4F5EA;color:#166237}
+.pill.on-hold{background:#FBF1DC;color:#8A6210}
+.pill.inactive{background:#F8E7E4;color:#96301F}
+.pill.hol{background:#FBF1DC;color:#8A6210}
+.rowset{display:grid;gap:8px}
+.rowline{display:grid;gap:8px;grid-template-columns:2fr 1fr 1fr 1fr auto;align-items:center}
+.rowline.r3{grid-template-columns:2fr 1fr 1fr auto}
+.rowline .x{background:#fff;border:1px solid var(--line);color:var(--muted);border-radius:8px;width:36px;height:38px;font-size:16px}
+.rowline .x:hover{color:var(--red);border-color:var(--red)}
+.addrow{background:#fff;border:1px dashed var(--line);color:var(--muted);border-radius:8px;padding:8px;font-size:13px;width:100%}
+.addrow:hover{color:var(--navy);border-color:var(--navy)}
+fieldset{border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:16px;background:#fff}
+legend{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);padding:0 8px;font-weight:600}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.sitecard{border-left:4px solid var(--navy)}
+.sitecard h3{font-size:19px}
+.kv{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+.kv div b{font-family:var(--mono);font-size:19px;display:block;color:var(--navy)}
+.kv div span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.note{background:var(--panel2);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px;border-left:3px solid var(--amber)}
+details.rep{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff;box-shadow:var(--shadow)}
+details.rep summary{padding:10px 14px;cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:14px;list-style:none}
+details.rep summary::-webkit-details-marker{display:none}
+details.rep .body{padding:0 14px 14px;font-size:14px}
+.flexbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:16px}
+.flexbar>div{min-width:130px}
+.pl-line{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #EDF0F4;font-size:14px}
+.pl-line b{font-family:var(--mono)}
+.pl-line.total{border-top:2px solid var(--line);border-bottom:none;font-weight:600;font-size:16px}
+.profit-pos{color:var(--green)} .profit-neg{color:var(--red)}
+.checkline{display:flex;align-items:center;gap:8px;font-size:14px}
+.checkline input{width:auto}
+.pill.submitted{background:#E4EDFB;color:#1D4E9E}
+.pill.approved{background:#E4F5EA;color:#166237}
+.pill.rejected{background:#F8E7E4;color:#96301F}
+.pill.pending{background:#FBF1DC;color:#8A6210}
+.offbar{position:fixed;left:0;right:0;bottom:0;background:#8A6210;color:#fff;font-size:13px;padding:9px 14px;text-align:center;z-index:60;font-weight:500}
+.offbar.sync{background:#1E8E4D}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;margin-top:10px}
+.photos .thumb{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2)}
+.photos img{width:100%;height:92px;object-fit:cover;display:block}
+.photos .thumb button{position:absolute;top:4px;right:4px;background:rgba(28,36,49,.72);color:#fff;border:none;border-radius:6px;width:24px;height:24px;font-size:14px;line-height:1}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:12px}
+.seg button{background:#fff;border:none;padding:8px 16px;font-size:13px;color:var(--muted)}
+.seg button.on{background:var(--navy);color:#fff;font-weight:600}
+.rowline.wk{grid-template-columns:2.2fr 1fr 1fr auto}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.revbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.filedrop{border:1px dashed var(--line);border-radius:8px;padding:14px;text-align:center;color:var(--muted);font-size:13px}
+.filedrop input{display:none}
+@media(max-width:680px){
+  .rowline.wk{grid-template-columns:1.7fr .8fr .8fr auto}
+  .f2,.f3{grid-template-columns:1fr}
+  .rowline{grid-template-columns:1.6fr .8fr .8fr .8fr auto}
+  .rowline.r3{grid-template-columns:1.6fr 1fr 1fr auto}
+  .stat .v{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<script>
+/* STEP 1: paste your Supabase project credentials here (same two values as before) */
+const SUPABASE_URL      = "https://mmersgqmkstbcazcjjcg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tZXJzZ3Fta3N0YmNhemNqamNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NDQ0MTQsImV4cCI6MjEwMTMyMDQxNH0.gkKlJ3O51j0hhglqdj3OSYjQ3qSCID2eV0o7QhjOi9c";
+</script>
+
+<div id="loginView" class="login-shell hidden">
+  <div class="login-card">
+    <div class="hazard"></div>
+    <div class="inner">
+      <div class="logo">
+        <img class="brand" alt="Vortex Engineering">
+      </div>
+      <div class="sub">SiteTrack — daily manpower · materials · progress · P&amp;L</div>
+      <div id="cfgWarn" class="msg err hidden">App not configured yet. Open index.html and paste your Supabase URL and key at the top.</div>
+      <div style="display:grid;gap:12px">
+        <div><label for="liEmail">Email</label><input id="liEmail" type="email" autocomplete="username"></div>
+        <div><label for="liPass">Password</label><input id="liPass" type="password" autocomplete="current-password"></div>
+        <button class="btn" id="btnLogin">Sign in</button>
+        <button class="btn sec" id="btnFirstAdmin">First-time setup — create my account</button>
+      </div>
+      <div id="liMsg"></div>
+    </div>
+  </div>
+</div>
+
+<div id="appView" class="hidden">
+  <header><div class="hbar">
+    <div class="logo">
+      <img class="brand" alt="Vortex Engineering">
+      <span class="app">SiteTrack</span>
+    </div>
+    <span class="rolebadge" id="roleBadge"></span>
+    <div class="spacer"></div>
+    <span class="uname" id="unameLbl"></span>
+    <button class="btn sec sm" id="btnLogout">Sign out</button>
+  </div></header>
+  <nav class="tabs" id="tabsNav"></nav>
+  <div class="wrap" id="main"></div>
+</div>
+
+<script>
+"use strict";
+const LOGO="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANMAAABgCAYAAACHWUcCAAAyNElEQVR42u19d5xkZZX2c857K3QO1VWdJidgkOSwSBAGXURAWHERkOCaRwURFAy4i4qfGFgMq4Ira0Z3lSGJgH4GBCQJjKAjAxMIE5iZzt1V1ZXufc/5/ri3uqtrqnu6Z3oG3K/O73d/DDNVt254n/c85znnPS9QtapVrWpVq1rVqla1qlWtalWrWtWqto+N/hdcPwd/FgBafaVVq4JpdsxUgVW1l3vw/b2Bl84++2yTSqXeUFdTc1pdfX1tfX193+joaL4ERKb6eqv2v8UzUQkNUwB2tq97zpzGFuvWnK/Qi1Wlm0D3K/FPC4XCr4aGhkZKQGWrr7pqf49gomAAe+X/0NHRES8UCvnBwcHkrP7ikiWRztHkB8XqVcZwq+fZbQT9Hti5oaenp7cE0FXqV7W/CzAVvZAFACLCvHnzjvAKuTeKyknWarOqPCEF77sDyeQTwednY3CPeZ54PF7vMD6uwFVMBM/KVmJc3dPT/73gsxzEU1Wr2isWTGMDesWKFZ2D/f3nuV7+QhE9wloLEflvkN7Q1zf08D7yDhO8YWdn/DgVfB/AMgAQkZ97VlcFHrEKqKq9IsE05o1OOumkps0vPPfRTDa3SlU6AhB9x/Xki8PDw5vLvqP78H4MAG/OnDndnpu7G6DDAEBU/mwtzhgYGNheBVTVXmlgKn5XD1q27MzUaOo669nFCoW19gnP6mVDQ0MPlXgu3QcDeLLzOgC8zs7OeSrew6qaIKKQiP4tk829Pp1O9wfXXwVU1V4ZIFRVWrxowVe7Otu1PdGm7Yk2jcdavgugtmSw8366HlMBUOjoiJ/S2R7XRDyW72iPayLe9ofg3wz+9+XZqvZ3CCRetWpVaMH8uas7OxJjAzXW0vR/yrxG+fdolqgllnV2tnV2tn+8s63t1RVo5wRAJRLxn/tAimU7O+La1hb7wiTXWLWq7RVNmvF3mFmGBvp/kstmz7UiOWM44nqFbw0MjnwsGMBF6kXFAT3LcZIZSKezjQ31q8B0fW1Nzcr62trsaCbzdPA7RSmcAKCpqW6jKN5LgKMKYaJjQ6HwL3K53M4Sqli1qu2V8R6Azx60bMlluVz2PCuSZ+ao53lrBgZGPoJxVU9LBqkHQDo7O2u7utqWNTU1tczCdQsAPe61J7wLinscx7yODP08kYjd3dzcPD/49+K10PbtfU9B9VEiYlVYJnLCYb6i+vqrts/BpAApwKXHzYBRQF9/9NHdI6nU1a7nCRE5UAW58gkF7Cr/s2MK3/Ll8zvmdHVc0ZGI/16su90r6DXMXD8LdE8BYPXq1bZrztwzFfptEGCYTwuHnD82NTUdAcCuBJyzAUcBNuBfk/+LpKqA0qlzGhtbFdDg3krvtxpLVW3f2+IDlv5rMU7qbI9rc1vLI5U+t3TBgvd1drTv6OxIqB9PtXy+PO6ZpfiNAKCrvf3ijkSbG8RG22paa+aUfrB2bufJnR0JbU+0ee2JNtuRaFOnpeGY6hut2myZU+6RCNC7mua1xEyhw3XZcjBYXVWKNTTg7Ez2LCuiTAQB0K209qGG7qWb1YYE0MMjUXlTA97Zm89+ksTCUx3OF7x3j4yM3F4CotmKUYpxUWh7T8/1nZ3t7RC5ipi7m1D7g7saWj6Udqwz3zPuNXlt+yNp0RuLEOEfOHrcdxsa+zeqDbUSexEAWRVDJpxbObLlherwqNoeg2l1QM9ibQ2HdW3rude6Bc/Hlz9iC9ksNTQb0+sQahXhESj+LaPvSuTS73QI1KzA77w8doRCDkQkB91hvMLZIyOpRwCEALgl9JKwdwWopTkmC8C0tJzw+b7B+89xRJblmE/a6maffuOoCAD8s8v82yaDGv+GTBKK8zP2y4lc4QthgIKTeU1EoR0m/20Al/wBcF5XocawalXbbcx0DiAEYOtF7/6Ta5wXGkVDjqgJiTpRUUdFTJbGSxgIQIOoE1IN1Yg6eVXn+lpyRlXcehB/POmtHRpKPRKA1sV4PCV+TIXwHlK+Yg2glJ7v6XXP6wVZEQtQAerdEyFjREM1oqGXCCaP8Ws3ADqssqMaCqs6wRG1IibjuqsBoK+q8lVtLwQIvRdwzrn88qxXW3NbCKwKWAuoB6gBNKrjQLIAegzBAzQK6G8jrH8LsRLgnJSz+EBOjv+Pmpo5ALzPlEjmi+fNe3V3e/zbfTubzsCuuaHdXm93d/yQjvb4NbFYTRcA+Y7v9bCjvueYt2XsQY6qRADnyRDpNiYVQB+MkBbzAB6AZgEWWEUWUAVUABsBdISw8R6kH1WAzqlWSFRtb9S84mycjkRvSRkDghoGyALUrKC5nvouJpC81oQIEggB90WZBKCogk7Lim0A1R2XpZMUoM8B3uFLlsQXzOn+QSaXfSDnec/3DY7cgYnlQKVroLiC6icAzEsv9a1l4rqQU7+ura35+IsC+pi2+X+aaxV1CmEF+g3RAIM2GKKHw0x1gZ/JEnC4K5hvFQWAgrhQoyAS4M6rgcJ91fxT1fYWTOcAVgH68rZ1T2TDztO1Pm5EA662siB+IomAOgUeiDCedXwxYp1DYAANCnSKwgMhCucsAvTEAxYcMJhJP5Qt5P8ll8meMjAw9O+YmNgtXXMkGF96XmRlE3o9bN/ZcxkRthh2fhmtq2tnIpiC96ZRFViAOeCVOwzhhjqDFI1nqAnAORkpR4tJQXWn6q1Vile1WQETANwHmNVEVqKR28P+R4QBjAI4LSdY6ikyBIQBpAm4rt6gnwlpIj84IqAAcA6KCOS1vz74yLkv5PXHBWuXFtzC+UPp9IPwv14EhwdAVgCheDze0d3WtjQejy/urK9vCz5TGh8VwQUFXRs2pikfDb/Dti1a0ix64DqHdNAQGwC1Cny7zuA3UUZD4EmHCfjHvOCkgiA9rmJIDUAZ4Jk/IPV4QPGqq3OrtudqXtFODGjXUG301tpk+lNkPQOQugC1KfCJtMUHmh14ABoVuD/C+GQjQcjPkA4T8EyIaLlVNADNWwcHrhnmwlER13tuaCh5SwAKD4AunjNnSV68813rHbtNdQlB2zxCDamKrYlk2msi25ToQcD7Tm/v8F8xXu1N5Mk6dVit4eP/lk6FX6WK22qMdQGnNvjg+hAhpP6NjhIwxwKfSdryYEgiILYkt1+t8E4Mqs6rw6Nqe+2ZyKd1dPS2DWuzkdBTtSBSX4BAEsCpecGnUhYj5I+4egUejBBGaJyv3VxjkAMQBgOp1NusWGWijQDsypUrGYAcOH/+MVmvsMaz9moCvZGIFxPQBCBMhCgRtRLzoYb5IoLzWGtr60kAdPny5Q4AitTXtFlVikUiB8cEb/+lA9xZw6Zex91KOABShoAGUVyZsnCgE9wOAWYEKj1qbyudTKpWtb0GUzGGAJHYaM3tISJQMMCKgFqVsfhS0h+SSfIBVdSr6xR4NEy4vs6gBUBtwTVQJSXMBUDp9P0EAKNe4TUKNIpIVlWtqpbGSQpAVVVEJMdMYWZ6PwAkk0kDQMT1zs9AcXBB5j1NsuyyJgNTTIyN3QQwQkCjAF8bsfhjhNDHhPB4vGRrAcqR/nUlMk8FiesqmKo2q2ASABhprbt9xBiXMKYsgwGkAPxL1uIngy6OKiiGKKgqDb5Yr8C36g0+W2dwkAW1WxWXeXmsrmnlmjVwATjs0H2qqkRUUyY8lB8OQKQqzwLgbdu2Zed1dZ3uet4FjkJ6vAJ/sE510GGEdTyoIgC9DBzsKn466OK2GsbaEOFVniI7fvMaBsElug2A3FddllG1PbQpE6YKEDHphmji4Vgme8xoUGmAElWgHkABwN1RxpfrHSR5/AMceIVjCop+hmwNMTmu3Zi3cnJxKXt3d+cq63nXEVEDoNAyDY2IoKqw1t7Z1z94DoD8grld5+YK7vdVtYYAeASCBsmmwFLk//57MharRgVfrDf4cZ3Bl0Y8fCBjMeRfnwaKhn0RctgJSK9TgKueqWqzDqZiOc3fYvMvnzs4ct2IilcuWhRHXSeADzc4+HEto1X9WCod0D83ECYYEBCxiGyD4MregYGbARQWtbQ0ZaOh09XKawS6kMANClWIDoBprYh7Z3//yJMHzJ+/IOMVrvKsfbf4VUJKfp7IL3cKYiMHwLF5wSfTFnEBLm4yeCjCmOsBPx9y0e3nlwDA1oPMIOmflmrymCAZXZXEqzZ7al7R7guwkmxu/cXwSOoa49mIBSmVgLAYJw0BODNncWsNI0fAqwuKuVbx6yghBYIhIKpgFvWIaA45dFMiEbuCFHdkBHft3NH7PwB+Wuk6uru7j+7urvnBSD57FlQbRMQlPzJyPAC5wJXEBDgxL/iXjOD1ruCuMOMdLQ6G2Rci3pITLLaK4XH3qg6AAtGtUBRTaVUVr2qz75lKqd7Gmo77Y6OjJ6QASxXiCgugEcCnGhz8qI7RKsCH0hZn5AR3RRkPRAjPOCxZJh5bBhtIBaoKERkgwhYAPapIESgEQkJVlzBzwo/FFAQau2gLoF5UDnaFjysoTsoLDrWK55jwxXqDW2sY9QoUCFjoKX426KFWx5W8oDdYYQP0VScjtfEzAF9dpXhV21dgKlK9p9sWfbh7YPA/kmo9gJwKoBvL5VzQEsIzIf/U7x+1uDptFQA9YWjHBa3hS4VxmBU5DKClANqJ0ExEY+CioBo1kPOCA3mCDoOwE8AmC33yYFPT++/9mW8d5HrhWkCfI6abahk31Rr0MhBT/3pqBPjhsIvDXMUoxhK1tgFkBkgfWKrJlVUgVW2f0rxSqjc8t/0XdcnhLzkFW2ODWKUclS6AZgW+lvTwjmYHg4bwnTqDZxyiL6asHmWl/dm+4fUNcFeXNM+LdLW0JIS5QxxqV9VGVXV8ULEL6KgIDTuO9KfThd50Ot1fLBO/r27O21xXww867N0VZefuKGOLITSoT/kGGUhY4BtJD4e7igx8kSKoYVIGkFfcQgBOrIKpavvaMwVeh4lJNtS2/zqezrwxOQnVK1X41jmE9zc72G78er24Ve+rKXFenc9/pRuZKy5sb6/7g+piMmaRsiSzWXfD4ODgtulcz4FdDbG01B18St5+bUDl1Q+HyKYZpi5Q9Eb9ciaszAs+nbJYZH3YjgQzQFT9ycAFsk+DDzodw5urnqlq+wVMAdWzf0ssfm9338CNSbWW/PV0mIzu/TnkF3x/rZ7xcIRRrxAC0ZEFu2W72BNHGhrm59zc94h4cYn8nSHQX8D0NIO3W7XDRLBEHCLVZivSCaJFUCxxmObmABSgiATeJu8DBa/yFBdkLN6UEzgAogAeDjG+V8v4QtJDncLWgkwv4XcH6sgbqnJ41fYLzSuhejq8ZOHd9cMjqVDBNngVqF4RTMXB/fV6xqdTgtUe8INa5hqoPh42843wk5rLfNe1emYUNmnD5hCAjgZwOEgPVNELlRE1zEEM5cdTxMU0q2JUBVBIPcCNophngSNcxWvzFoe7ivrgekYB/KjW4P80GJyaEyTUVx7rAXiKm4P7q7ZLrtr+8UylVG99bcedifTo6Ul/Ve6kVK8FwDubHTwaZtw47CFFwNUNBlsMaTNADIIn0guiH6oWbuzrSz5XcopIe3t7F+DGrdW2UCjUDKAOIjVMMDnjZD6c9D50SN57Vb2otAu4VRS1JTeUBfBgmHFDncGasP+3Pxjy8LqCaBYgD5raCO/Ak5HdXux9UR0OVdsvYBpT9ToWv72rd/DHSfEmpXoCoAbAekM4MxaCR8DHUxZn5gTf9dU2BREV6+MCxe4xgt4hsL/q6xv5C6YY3Hqzmv7zY9uintuRAykHAqAFMECEhyOE1VGfXjoB/TslJ7h+xEMWsE0g7iW9+wBNnlGleFV7OTwTEaBPrDy9reWRRzbUFAotblkCt9w7NQO4pt7g+joDIuCEnOCLKQsP0Itbwk9sZD2shihsVUtzTqqKDQSsIdI/g2mdqtlCo6O9R0UiuTsHBjJrmuedtyiZumlQrOQJ3GcImxzCYyHGI2HGC45/UU0KDBGwxFP8eMhDXBR5wDaCzIuQdxyB1E33AabaNKVq+xVMAHAzYM4h2PX1nTe3p0bfmvQx40wmRBgAeSKc1+JgU4hgAYQF3pfT4pydzX+oYXHTnfPS7r8VVM8kokTRSxFNvCxVdVU1ycCICwzPFXS1C9rTBIwwaJAJyYCn1ah/FMhfV3WUq/jqiIf5VpH2e1VQFjq8BrrsHKT7qhSvai8LmP4AOCcCdm3XsrO7d/b9fFQ8i0moXpHu1QH4q0O4sDVUXIcuWSJa4NmtQ/Deum0g+Xg8Hq8Phfgc8eQtCj2WiFpLgDThnIYInioKQcDGOr6m3cLv7+DBXzZ/Tkbw/oxFowIjPri9RpDpIb3tAE2+VQFD1RW1VXs5wFScxZ9885ubm3790IaafD5emILqldK9eyKMDzU5CAEIAZojIkcVKnJT3rWfHRkZeR4AWue0doc9c4wqjoPKkVAsBVF7UdEbVYHrL1Sk4qInBhBRoFWAZZ7ghILiH3OCg0TRD2CjQ1juN4Kx9SCzBXruEUiu/kOV4lXt5QJTAChDBLu+oevHHcnRC0egk1K9ckDdGWF8rMlBgYB6gboEMBNZKxlRfB8ofLO/P7Wh9LtdDQ0xNxqdEyWa74WROCMtl3a79lWjBAkruE6BmCi6rGKuBeLi551CAPoI+EiTgyMLig9nPE2DKAf0/xHJpe8ChqsUr2ovP5gAWdu15PTOnQN3joon5K+CwHQA9VCI8IlGB8+HCM0+7/OE4DAzrLUZqN5qlX40MDDwR6C4UiKgeMzYys0bmjx3aRYk5CtxYy1diwljC+CBMOPf6w2eChPuGHDxD656jp+o/e8DdOTCKsWr2mzbnuzqJwD0uSOX3zfsmO0RP2zZrbRsAAwDONpV3Dzk4dyMIAsgx3AIUGttnohqjWPe7hj6XaIt9qd4PPbZRKL16FNaWxsBYLhtyT82iy5NA2IB9jC+upfhLwj8fZhxUbODDzQ7WBsmHFlQLPdX1rIH0JDa1ajuclG1V4JnKvFOdn1j9391JNPvmQ7VK/VQEfh9vh4MM77S4Aw+7VBrlAArClUtkG8hIkBFQaovFgw/9kYXc08a9Y6uFdUowBIAaIchPOsQ/hIiPB/08GsMZPGvD3v457xoHqAssOM+hA54LwZSVYpXtVcUmNbOOeCN7Tt6f52106N6pa7NAHYOYDYDv1wwv/6Lc/LeKlfkZCLqKlaUB0qeAGBDhAL83g0hjDfQs/AVBIZflxcNuOEIAReNWnwqbTEKeC0gZyfp9w/Q5HuqFK9qrxSaBwQN/p855tAHRozZHJ0m1QuAiDCAHYb4AYfhQE7Qzdv/tG1n77uaTO4wUjpTgK+pykMAhoiImQkZKPKARBV+Hzz1V8/WqN9BNqpAnoBBAhpFcU3S4sq0RdafMTgPIBvU4lWtaq8YzxSAwiHAe6ap+1tdI+mLh6EeTYPqFQthXzSEC1scWWrBLuT6v1j79b5kclPpZ9va2jojxhzksh66oqDvi1pZvtVAUgTOE43FS2FVNKvfiP/ovOINecE8USQD4EcBTgJb7kXyoPcDmSrFq9orDUyGAPvXOQeujO/oua9gPSXQtM5XLIS9sdbg441GO5VIVNKq+BUEP+kdGPg9/ILvMdsaavlTo2uP6iVIloizNL5HTZ363qghoIAZ+PV4QTbZawY5LxG+fZCOXFSleFV7pdG8Mar37HvOfSQVMptq/K6v06J6Bn5FwjszFu/MCA1CrQOqN8xns8O/SMRbn2iPxz6/sL31KAAmHV96eIPVowpQbVZwtygOsIrDrWCFFXSK+kvm4S+vcDGhnJ0zUKTVuxkAVs9souHgVCYQWIp/ZlQVwarNlmcCxivJn22ee13XcPLyYegurcCmEiGiwZ8/3OTgriijUWCVIEUlD6LIQZ86UrjwllHvqIRVbRYlAyBLhGECngj7+ar3ZSwKZTcUNOTnEehz9yB18GW+w5qK3xHGt5Kx05wXirczU9poZuG96TR/m/Zy4pyJ2X38u6VbEGGaE9tM3o+Z4e+PmbM3dzW2l1Nd3S3JVPqjaj1D08Cnwl+i8VeHUAPgxyMePiZO6qY601CrMJ6oB6glonCU+PA/G+DBRoMIQGENtn0nYICBJgFWD7oTdjMseZMSBfEAcOelQH4Kije2QzyC8qI5c+bUiGTnETndItokImFWzjPRcEFkW19f39aATZa+BLuHg25vzUz1kmcwOWAfDPx9/buyDyeDGdlegam4l9Nn33vuExd8+YZ1LdYenPHpH+/uCTMAj4BVjY5cn7T8tZQ79HhD6IIXBFcalmMU5ATrnCQCoFbBEiChwH6fh2Wu4j9GPBzmabGQdZdBloIiCV09BcUb28ZzUUtLUz7i/JOI/lMhnzuSiOYQiUMEMAhghVUFkxbaE7EtIHoMFr/gUP9dO3Ygg/HN2WQKD6GxWKwhEna+BUVD0F99et6I4IlIFqqDZMxLgD4NmDU7d+7smwTQBEBbW1vnRELO14mJVHQfCS9EILUF1142MDCwHQA6E4k3KOtFBCpAYcZvVHTa9xwMJSYIMYXVysM7evquDd4bJxLxrxiibiUV1WKD3uKLZRATItHaf33hhRc2TufdJNpar2XHLAXgqurYZntMLERkDJvtiY7Oj65Zs8YrGc57DybA38vp6quv9i5omXdHJF84OOMPDt5doJYDsNxVhAA+s8WRK0d53k3b06mlGD12QWfnyXm171HV12UIrS5gwH5laxhAu1WclxesGvXjpUpAUkBqAR4Cnrkn2HOpwiJAA8CuBJznE4lLspBLAcxXIjCNLVoU1eCB6dhDDxPxEgBLYHC+2NiGRBtd19vf/18lc8WkIAnn8xHLOJ+YnZnO86Ut0VQBVa+/vT12uwhf29fXt6kMUAR/iViLQs9S0X3rhBRQzX8GwPYAXwcxcGYRv7RH0YWO3SsEsFaiAK5dvhzOunUouK631kRCH4YC5axIg2vK5zL1AE6dYlwaALalsfEc45iPYWyr2fHzFZcGEWjVmjVr3EpMZK/5bJHqJRuabksaY0sb/E9lHvymlWfkBFkCXVtv9PWJ6P90trV9Slx37Y6dved+4IMXd/xkRP/238Merhv25BsjHn4y6OLuARdfTFm0yXgfvArTjERAsKS/uBrw7tt1W00DwC6Ox5dsam+732N8VYjmi6gt25GjVIQoig/qg8z/LBEvM4ZuTLTFft3a2tqNsbz0ZHM4qQJDwfe94nmmeXii6omIF1xjG5N5H5Ou6Yi3vgNl/eCD3yv9jZn+3rSuKfhvgZlsyQjMSfD3s/AbBVW1ANIAsG6df59DQ0PfLbiF24J3kt/lWYkUVPWUhfPmnVXp2RTfZ0sLmpyw8++qasVfP1d6njwAJdDqLS+99F+TUfq9BlOR6v1y81+fyoWcv9ZOU9Vj+H0azs4KFlolViWXuEMduqbA2BKPtz36o29f/81tsIuarOIfXKXXFBQLLNDPhGfZzzNNcQNmBCr9yreUgr4USEu7ug7PMh6woGNFxIM/OMsVu+LOhsVDypU+VRVR9YzhN4Ycvr+trW1p8LB5N3HOVAdXOIqqYvFgACoiHhEaweaHnYnEqvJBEx4XVvb5oTo+nes++F2d+EwVAHnp7OUikiKiUAUF1hERzbn5a5cvX15fIbRmAELU/GnHMfMCJxoqew8hEA3V1NV/tOjtZ1san0j1iCQfCd9WupfT7uQlF8DCYAOyAgGiqmzVKuAYptfkmC76WJPT8OZYCKfFQnRyWwinxUI4JRbChkC8kMrEQGpBlAXWfgMjT5Vtq8kA7Pz29gVp694jQKfqmArJ5QoQETEROUzkkH9wBXWIATii6hLRYsN6T3t7e6LEs+2pYld+2AozIgFwVCGqKkp6fTweP7zUOwbcv3Sf4Mm27plOsL+7Y0+UueketmxsCQAeyedf9Kz3WapMr31hSXVRamToExjfzrU4oXlNTU1HOMZcIqKVJkBhZg6HQ1du2rRp21QUflbAdGJw8sFYw+0jhj2CGp2qIUpwF2n2Fb3z8oLPJS0KAKU5UNxUXbLqNatftFpsvrLNAG/NCk4O9qSd5AYkDEAYt62eOEsTAKxcudJx1d6kE4E0MYfmg4hE5Smo/lBE/kNFfyqi6/1/qxjMhlTVZeYlqvLDvUg/iKqOqmomOHIBsA0RTbYLfPElO0x6VelnFODgfqY8di8xTPpdE/w3FIgAxSsqZvF1kvPRdK6reG4iMiDUVgC4GRwc+aZrvceD51M+4RgREdfzLl+4cOGyMhrOjsPfYOZQhfdl/fPR77dseenG4DuyT9S80vhEAcKmdeueq+t4osWzR6cr89OJ0gmAf2twcNmoxaVZiwM9xecajG4MG+OpmHxQn6SB8hcV4IOjFlemLPJTjFIGzDDU2yr29jL51ADwntvw7MXK/FoVmRRIKvK8Vbqkv3/gV2WDIdLe3v4WgnyFCF26q+ASElHPMJ2aiDVf0Dsw/JMZyOaWiIyIPul68s+BR0E4rEYRqVe1CwG+gIGzdeIMOzZoVFUBev2yzs62DTt29AMgdZwXrHinBreq41Hr+Ksg4ggU/8XMCf8cY49XADARdir0fSLWHX99u24aEgrVbQHS/v2Kn8KodJ/MZBT0LRF7h4hEguqwqUaZqrIBaGfZOy2+G69QsB/iCD9EROWZkuLEV1PIZa8D8E/Bs3Nbm5reE3Kc1wbxmCmnkAAyjdGai3eM/53uk6RtpQTu0y3zPjZnOHltpb2cyr1TFMDbWkJ4MkR4/6jF27OicwT6uebIVX+rD78+ls7+4w6C1KnyUg84KS842vXXQckkF6/B0vQByOPLkHpNyZ5LBEAXLVrUlBlNPaOqHRVomA8klU0FV14/NDS0tSSROyFv0tXVdYBY9/eAdgVqX/l5SFWei9YMHLJ584R8lHY1NMS8aHhD0Oui9KX7YLLyYG//wPGTPbt4PPZZw/yZCgMAgQcjhX1NT8/gYzPJfyXisReYeUHZBBGAiZ/b2dO7ZAYpF68jkXg/SP+zwnV6zOwYdt69bfv2H8zSEHQAeC0tTV+PRsKXBpTN7ApiNuFIzT9v3rz59tra2s662uhTxpi2Uhl8wjU65hPbtu24djrPcday00Wql2uN3T5iOM9QZyqqJ/ALXk8sCLIEfLve4ORYSD7Y7PB6koNel3bdVaMW/5ry9KqUxQdGLY5yfWonU8wCVNxzCXwrAL1v/IEaf/rKnk2ETuw6sysAqKjreu4FAZCK7LIoPozV1m7fvn09Md49STki+9uL8pJMqvW0PYidSgWHUgEiBIAjkZovq0gPdlUox+5DXDSXTZqTBfUOABOLxRow1TIaVZ4zZ04Ndi2tKj9mkG21tcF3IjMQIXiKZCsPDY182vXsiyWx7YThISLqFvLXLV++PByNhq92HFPuiYuTmgPC44sXL/vq7ujdrIOpSPVWPP/UpmzIebTWvzaZ6oczAN6cFcyx/hIKIZhfRAiPRujC6yL2lDe3OHhna8ic3BbC1Y1mbNTQFJmOgOIVBiG3l4K8eC2u6507ljcqn7X8XQ1vGRxMPhYMmMIkTrUAwNmxo+83ELkneHG2wnyhxHTeXmT2yw8XgG7bti1LTC8E+SaZbFKpUIkw6REOhy12U77S2Nhod3ee/VBRMVWVBwFIum7hI/7eDLu8ZwYAEbtoaKj/dseYt4ufBCundyDArXEiF91///27JGf3OZiKqh5U4Uait/Bu4lkKErdzRfGvKQ9Z8rfrjAkQsWojCmmC37orrMC7MnY6nFRqQZQjPHYCUhtKErUEQBYuXNiuwFGBS+cK3gQCe+NU8ucuMx3MjcVtpSrEL0RMx8bj8foSrzZLw4poKurOYRqe/XE8u8YwmeC55KcBUjsN72ABOCMj6Tu8gncbc0UxgtTPEp5GRNEK78QykzEm9NXnt259YiY02ZllMAkADHXF76xLp64Ne1rjTdEKrBZAEsDpeQGGPXyhweAlh8AKQ4EOGrPA55MeVrj++iQzNUDVAPCIb4EG4B5fiGttPn9IkCuWSrGSFdk6MDDy2G5mwNIXp9Fo9I/5XGYAQKxC0AsAXSJyIIAnsPcbBDAA6uxERDxZUMRN+eysqklVs6UsUH8lme9SxTsikYhtUVccopJkr1NRfHAiEdq+bVvv2t1MdgKAJJu7zHPM6w1zYwUaR0FcWB4nCQCHQM+2d3Z+btv27WYmz29WwXS1T/WYnvnzlo21iT82e/YNyQrVAMWEyYuGsMAqDICz8oIVruKeKOPpEMEDsMhTnJETLLOK1G6ApH6s5AxAc1sk94tScBcfmCfuMiJAtXK8RMDagH1OZ9ArANqyZctQe3t8HQHH63jSd4I6R2KXBGCa7n5YFLyb0kEzlpNx3db3OYbbKwT2RQHlyd7e3p4Zg1ehUwSje+CaJs1bGxEBCJcw8SUI754gEROsi1sBvBXjRcmTgckM5XJbm6PhTzuRyDd08sqH8vepzIRQpOaiNWvWZCaJSfcPmIIBzFCVXDiyGpn8yahQx1ncEO2GOoMdBnhHRnCIq+gSxeUZD3kQskH0nwOQmh4flVqQGSV56FTNv1ipIb8nOtcwV3o+Gqz4eK4sZzMdT2FV9XkmOr6C4KJEADk8f0bTNsFFpeaY8xFtH21dBeZrtXINpBKBrOB7M7yPl8cU/garu7dAGdbcDFBshoeTNzixlvMdxzl6EuVzwvhhZkNM39m8efMfMPNVAPsETH4Ctz1+d30qlYp42lDe4L/Y3+7VruKyWoPHw4x2q1hgFfXqu7erUhZxUXgzkIgIQIFodUDxuDwXISLNhmkK4qE9e0JXAPROSjwUINLYDGgciGhxoi32BUAJzATROiLqRkYPI8OLtPL484jIEdGH581b8LO+vgHGK39FMU3TWxfVzJnGnLbg2kuY+eGSZDdV9GYEo4oN4Xj0k9gO3pMgcdbBNEb11q/Zsb4mcV+LZ88ob/BfFB+OKgjmWYMCAQNM6DH+gr8zc4K5UxSxTkLxzCBkdKd4d5VRvNJPRqdKuTmOye/RiCDKTjVcrKfh6Z4qAEq3cfjK8aFEwfxNmITru371AV4CuRcEVc17NCBm13bLkqa7aM/CXzQwEy9rATjJZPKJUEvzt8Lh0EdEJ128KkzEjuH/3PyXzcOolI2e7ky4L6ieKihbE10tzMUYYMKP5gAssYrDXUGa/ERDjQJdFrg0PeMJVepAWiC6/yRkX9LJ96fVfTjDzuZDVhH1So+SSvZdZmhmDqliPbE9uadn5EX8neyEWFKKtLsjwkSG/H0gZvJOfNmb+SCd+j2xiMKz+v4VK1Y0YepU5v7zTABwoi/E6QMHzfv18GPPDEcLtnkyqvfWrODeCIPhN418Z1ZwuKcYxswygAqQp3ozxiu6ZRe5GJSbXAdSeJ6N7tENi9b6+uNkg2bGHq+06oJ2I4KkVeRW4+Sv2L49NbAnXP/liJYIIBVdq6obldRBmVhUBjorgjATHprBpMgAbHNz48Uhx5yym5gpoMR6QE/PjqsBXLYn3mmfgMkXzMD00IN9G+s6f1tbcHfZy8kEwsJJecExBcUjYUJcgAszU9fdVaJ4IZ/ijayHFOvoKg4mMmZoymEJap9xCO1b+1RhtKr27aW3q8T1LREZFblrZ9/AuyYOin0iFsxmAxlLzI7Dzte3bd/+/T2ZvqYBJIlEIgvCodAXgN0vWPW9k1h43oeWLl3wPxs3vvinmU5M+6zJhq/qgQr10dXChiqVPCr8+pgr0h48AEe4vgyem8GFEWBrQWpBvz8Lo703+30eKq83UXphkjmNgnqfJdN8WRNfKmPBJLMqqQJg3bwHIHUBFIJypUoD2aiqEPPZiUTbefv6fe6ZNL5bi2L65UQ8s2EBra+r/aafZ6o4GWklMURETGY0d8PKlSud6VD4/QKmE4Ok5uCS5b8bMtQXCvqglP94GsAxruKSUYulno4Vw82E3glAGcZqABSftP4VcIxZr+OOcdfnQHoo/GqF6XBmAqDLOjvboHRwIBxUrOImctbvCtLKu5cSERT6lCM4OKR0sDF0EghpVK5YJqg6THpje3vLqwJaYvbJC9XZb20mfi8Ii+lXP0xnkjMBvbsgFHJOD0QHM0VMtQvdE5FXb37huY9g9ws89w+YAqpnjn/w7iEvEv1NLVgrdQYq9tC7KG3xtozsNjlbTvHCgBmEDmwQ/AaAnljZLQsANLeF/gagv8KDJFUVJu5q8bzjML0WVQYARsQ9iRkt2LVcSMjvG7s1HA5vnJEAIhh9qb9/47a+vk3bt/f+npQ/yDS2B7aWeVQBuB5qVi9atKgJe7cgcXaN93tzQQagdXV1CcdxvjLJs1D4lfX9kwFKRKTgup9evnz5ElRe6rJ/wVT6wguRyM8LzKRQnowrGfhbZ85Qjwwonv7fc5Ac1MkpngLgtWu3DAF4kIgqxVUCIjgOXYzJ8xG7uhXFJZPES0KAKuH+bdu2ZTGzbHpp1XhoZ2/vT6zqDczkVLhuVlWPiQ4cHU3+YCYvf5/TPNnv2jz5sZLzlZAx7RUS25aIyDHO79mETlbVPO3q8clXU6U+mRz+xjTGwn4DkwBQ++ol9yYNvxSZRLItXqk7cz2SXYAyfisvms69hp3wfweLx8o/7wTe6fRYrPmMgDKFK8VBQajntcfj7ySiYyuUEfmDHCBV+clePLti/wnT29b/ERV9jKgioBzxAfWWRKLtKoxVDLzSTRkTe1pM5zBT0buWhoY3hZzQhTL5Yr+CCYU/uX379ic9T742yVINIyLWet6pCxcuvAC7Wei6X8BUpHqH//a3o27IubsWPGUB6QwbQGkE4GHIzgeQvhe7L061AIgc55equiFYuyO7qrAEw84PYrHGI+EvtVBMzMArgEJ7e+x1RPhGSRK1PPYhUXmqr++QezFejrhn0QqgWIeCEVwIf8+4SvTEiKg1RJ9rb4+dMeuA2gcxk4FJB9eZw8SmNVMddor4p9FEQt8MmEeFanBmw/yNLVu2rFmxYkVocGjo865nX6gEKCIiEZFCPnvdihUr2qZDn/fb7FWor70llyusUrFMswNUWwMyw8CvLgWS02jIrwDM5s2bc3Pndn3ac72fVWigQaqqzBQjCv8u0db6GWTzP+sdHR0rM+rq6poL8d5lRa4ENFqBBhRpA4nQvwH3e9j73I8AMC/192/s6Ii/j0CrdTywpglqlL9s/YfxePw1QR+96Sdwab+FOKyq8MQ7NZFoi6hqCFM3h/TdGLNDVjft7O//VdmEYuCvsv18yJiFFbySADAKfbG+seVz2NHDa9asUQCjrle4wnGit6JyIxbPWtvR27vzSwDeuzvvtD/A5Df4X3nkgzV33Lu5Ubz5uWA/2r2bKMH5cYqH+6bn2CwA3rp1x8+7OhNnM9NZIuoGtG0CoAA0sTFfl9roVe11teugOghCm/UKhzBTY9E7VpgBPWYOWc/+qL9/4G7MXhLVAnB27uy7pT0e+yozf7RCeQwHXrGVoas7OzuP27FjRw7TXZ81VdX47OKMA/XzXMN07nTPTcRwrfdbAL/CeE4tAFL9a8Oh0MUBkHYRHZiZw4YvX79+fVHj8gCYkZH0bY5x7gmFQqdVSOwaVbWe677ngMWLf7r+ueemLIDd5wIEAXov4JyzenXWRqO/rPEbDcteAkmiPsXb+jhS95dI8dNliOyEEu8DeG3Qa82tRBv8BpMUI8LxxPRmIjoOQGPg0SoByWWikLXyJzLOxdjTsh6eElCmp2/g41blj5PET0ZVPWY6XKz7nyX6zl6hgfbBSFFVKS+bmuLIi4hHvvhbjvCI4fANAV0rj4ct+0Wuv9z80s7bysCgAKjg2o9aK9lKKq/PMATpbPpbp5xySmSqmWW/SKjFBpD5utrVo0zFwHOvvF0NCEq4K9i8zMxg8zIFgC1b1g7VNzSeSsR/YaYQdl3JObYjRml3T4x3KqOyQW6ZOSQij7Bxzujp6RmdkRw+k/gJsMz27UFlRSXAOiLqMdPbE21tH8G+zD/tvZQ9IwFCyzwHANvS0vSpkGMO0V29UtDlmNJOKPKRCmARAJxKpdaL9b4yiRgR5J50+dNPr/3UVGLEfgHT2cEF3nb84Y+mQ2Zj1P//ggLenhwESBqqQyq37EUMwhs3bnwpHImeCNDPmNkED1NLAt1STl7aMEQwvmPGWD87K/o9sPOGoJH+7rzSTIPsCfx/587hzRC8K1AmvcC7lp5DRTTPBl/q6GhbOS1A0dg9VTjIFgqFGXk32rUb7l4fNLGZqFdfX788ZJwrxG9hPOH3VFFgZmZjvrB169bnJnknAoAHhka+7Hn2uaCvRqHsd8VaKVjPvfzggw8+COOrt/c/mAjQPwDO1atXF7yamrvjZJx6ULgF5Mz0aAI5neDwKLDjTxh9aJKG/NMG1ObNm4d37Ow9jw2fBeBRIiJmcgKAUMlspiVCDxORCT5HqngApG/q7e17b+CRpgSSqhIR2pjJYaZQ8F+HmSLM7EDRMp34qae//24FrjGGw2XnKZ43QsRhFfwmkUgcOlUOSkSIgFjw3XDJecLM5ECnvSar5MVLzfh9Tbi2PTkizOQo0FScoFtbWxtroqFbnZCpZaJI+TMwhiNQXVdTUzdVh6EiXU+7XuEKAIaZwxWeZVgVdSPDQ6sPPfTQukp0b7+peScWFw3W1H5nc84lz7peQMXHtlSfCoyl7z0DChdAj17qIv/hvVtuMLY26CWfT9/W0dFxAiCnq8qxgC4CqC2Iq4pAKKhqP6AbFfygqr2rt3fw0ZLJaff9IxoaMizeNaKoDcoCA5RCIBIyzM9PV0zp6en7dGeiLSNEbQDZ8RpIUkCJFNYw1yjhVQD+Ohnfj8Vi7mB/77VWtIWI/J1zqLjpvRqHabC7u9tu2rRpus8VVvkxEv0K+ULJ3ioYAkKYDa8FgNWAbQW6iZ3fiJU7FWBSaMlwEDYcZof/Z9OmTXlMvb7LAqCRkfQdoVD4oyFj5iqRp+VyjIhaktp0Ot0FYGP5OatbSZbx79K/aGlpaXIcJx4KaYO1JmRECi6QEpHegYGBVFl89fewsvX/V5t2t6m9iXH3O5h04lqdPbbVgJ6zbwZvUVywu3mwM92ycyZpiZmcc7rPczqForN1TaVhxL7YhtPO4N5nuqHAdNhaxbFR9Uy7H6hUYdZSvOxLwqtWtapVrWpVq1rVqla1qlWtalX7+7H/BybXHcaoAw9AAAAAAElFTkSuQmCC";
+document.querySelectorAll("img.brand").forEach(i=>i.src=LOGO);
+const configured = SUPABASE_URL.startsWith("https://");
+const sb  = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const sb2 = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {auth:{persistSession:false,autoRefreshToken:false}}) : null;
+
+const COST_CATS=["Manpower","Material","Equipment","Resources","Overhead","Subcontractor","Transport","Other"];
+let ME=null, SITES=[], WORKS=[], PROFILES=[], TRADES=[], WORKERS=[], SET={std_hours:8,ot_multiplier:1.5,holiday_multiplier:2,currency:"SGD"};
+const PHOTO_BUCKET="dpr-photos";
+const $ = id => document.getElementById(id);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today = () => new Date().toLocaleDateString("en-CA");
+const fmtD = d => new Date(d+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+const n1 = x => (Math.round((+x||0)*10)/10).toLocaleString();
+const money = x => SET.currency+" "+(+x||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ---------- auth ---------- */
+async function init(){
+  if(!configured){ show("loginView"); $("cfgWarn").classList.remove("hidden"); return; }
+  const {data:{session}} = await sb.auth.getSession();
+  if(session) await enter(); else show("loginView");
+  sb.auth.onAuthStateChange((ev)=>{ if(ev==="SIGNED_OUT"){ ME=null; show("loginView"); } });
+}
+function show(id){ $("loginView").classList.toggle("hidden", id!=="loginView"); $("appView").classList.toggle("hidden", id!=="appView"); }
+function liMsg(t,ok){ $("liMsg").innerHTML = t?`<div class="msg ${ok?"ok":"err"}">${esc(t)}</div>`:""; }
+$("btnLogin").onclick = async ()=>{
+  liMsg("");
+  const {error} = await sb.auth.signInWithPassword({email:$("liEmail").value.trim(), password:$("liPass").value});
+  if(error) return liMsg(error.message);
+  await enter();
+};
+$("btnFirstAdmin").onclick = async ()=>{
+  liMsg("");
+  const email=$("liEmail").value.trim(), pass=$("liPass").value;
+  if(!email||pass.length<6) return liMsg("Enter an email and a password of at least 6 characters, then press this button again.");
+  const name = prompt("Your full name:") || "";
+  const {error} = await sb.auth.signUp({email, password:pass, options:{data:{full_name:name}}});
+  if(error) return liMsg(error.message);
+  liMsg("Account created. Now run the 'make me admin' SQL line from the setup guide, then sign in.", true);
+};
+$("btnLogout").onclick = ()=> sb.auth.signOut();
+
+async function enter(){
+  const {data:{user}} = await sb.auth.getUser();
+  const {data:prof,error} = await sb.from("profiles").select("*").eq("id",user.id).single();
+  if(error||!prof){ liMsg("Profile not found — check database setup."); return; }
+  if(!prof.active){ await sb.auth.signOut(); liMsg("This account has been deactivated."); return; }
+  ME=prof;
+  $("roleBadge").textContent = prof.role;
+  $("unameLbl").textContent = prof.full_name || user.email;
+  buildTabs(); show("appView");
+  await openTab(ME.role==="admin"?"dash":"entry");
+  netStatus(); flushQueue();
+}
+
+/* ---------- shared data ---------- */
+async function loadBase(){
+  const [s,w,t,st,wk] = await Promise.all([
+    sb.from("sites").select("*").order("name"),
+    sb.from("work_items").select("*").order("name"),
+    sb.from("trades").select("*").order("sort"),
+    sb.from("settings").select("*").eq("id",1).single(),
+    sb.from("workers").select("*").order("name")
+  ]);
+  SITES=s.data||[]; WORKS=w.data||[]; TRADES=t.data||[]; WORKERS=wk.data||[];
+  if(st.data) SET=st.data;
+  if(ME.role==="admin"){ const p=await sb.from("profiles").select("*").order("full_name"); PROFILES=p.data||[]; }
+}
+const siteName = id => (SITES.find(s=>s.id===id)||{}).name||"—";
+const workName = id => (WORKS.find(w=>w.id===id)||{}).name||"General";
+const profName = id => (PROFILES.find(p=>p.id===id)||{}).full_name||"";
+const tradeRate = name => { const t=TRADES.find(x=>x.name===name); return t?+t.rate:0; };
+const workerById = id => WORKERS.find(w=>w.id===id);
+/* a named worker may carry his own hourly rate; 0 / blank falls back to the trade rate */
+function mpRate(m){
+  if(m.worker_id){ const w=workerById(m.worker_id); if(w && +w.rate>0) return +w.rate; if(w && !m.trade) return tradeRate(w.trade); }
+  return tradeRate(m.trade);
+}
+
+/* labour cost of one report using rates + OT/holiday rules */
+function repCalc(r){
+  let men=0, normH=0, otH=0, cost=0;
+  const holM=+SET.holiday_multiplier, otM=+SET.ot_multiplier;
+  (r.manpower||[]).forEach(m=>{
+    const c=+m.count||0, nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, rate=mpRate(m);
+    men+=c; normH+=c*nh; otH+=c*oh;
+    const dayM = r.is_holiday? holM : 1;
+    const otEff = r.is_holiday? holM : otM;
+    cost += c*rate*(nh*dayM + oh*otEff);
+  });
+  return {men, normH, otH, hrs:normH+otH, cost};
+}
+async function fetchReports(from,to,siteId,opts){
+  opts=opts||{};
+  let q=sb.from("daily_reports").select("*").order("report_date",{ascending:false});
+  if(from) q=q.gte("report_date",from); if(to) q=q.lte("report_date",to);
+  if(siteId) q=q.eq("site_id",siteId);
+  if(opts.status) q=q.eq("status",opts.status);
+  const {data,error}=await q;
+  let rows = error?[]:(data||[]);
+  /* rejected reports never count towards hours or cost */
+  if(opts.costable) rows = rows.filter(r=>(r.status||"submitted")!=="rejected");
+  if(opts.approvedOnly) rows = rows.filter(r=>r.status==="approved");
+  return rows;
+}
+function rangeDefaults(){ const t=new Date(); const f=new Date(t); f.setDate(t.getDate()-6); return [f.toLocaleDateString("en-CA"), today()]; }
+
+/* ---------- tabs ---------- */
+const TABS_ADMIN=[["dash","Dashboard"],["pl","P&L"],["reports","All reports"],["entry","New report"],["sites","Projects"],["workers","Workers"],["rates","Rates & settings"],["import","Import / Export"],["team","Supervisor IDs"]];
+const TABS_SUP=[["entry","New daily report"],["mine","My reports"],["workers","Workers"],["addproj","Add project"]];
+function buildTabs(){
+  const tabs = ME.role==="admin"?TABS_ADMIN:TABS_SUP;
+  $("tabsNav").innerHTML = tabs.map(([k,l])=>`<button data-t="${k}">${l}</button>`).join("");
+  $("tabsNav").querySelectorAll("button").forEach(b=> b.onclick=()=>openTab(b.dataset.t));
+}
+async function openTab(k,arg){
+  $("tabsNav").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===k));
+  $("main").innerHTML=`<p class="muted">Loading…</p>`;
+  await loadBase();
+  ({dash:vDash,pl:vPL,reports:vReports,entry:vEntry,sites:vSites,workers:vWorkers,rates:vRates,team:vTeam,mine:vMine,addproj:vAddProj,import:vImport}[k])(arg);
+}
+
+/* ================= DASHBOARD ================= */
+async function vDash(){
+  const [dF,dT]=rangeDefaults();
+  $("main").innerHTML=`
+    <div class="flexbar">
+      <div><label>From</label><input type="date" id="dFrom" value="${dF}"></div>
+      <div><label>To</label><input type="date" id="dTo" value="${dT}"></div>
+      <button class="btn sm" id="dGo">Apply</button>
+      <button class="btn sec sm" id="dCsv">Export CSV</button>
+    </div>
+    <div class="board" id="dBoard"></div>
+    <h2 style="font-size:20px;margin:6px 0 12px">By project</h2>
+    <div class="grid" id="dSites"></div>`;
+  $("dGo").onclick=render; $("dCsv").onclick=()=>exportCsv($("dFrom").value,$("dTo").value);
+  await render();
+  async function render(){
+    const reps=await fetchReports($("dFrom").value,$("dTo").value,null,{costable:true});
+    let tNorm=0,tOt=0,tCost=0; const by={};
+    const menToday=reps.filter(r=>r.report_date===today()).reduce((a,r)=>a+repCalc(r).men,0);
+    reps.forEach(r=>{
+      const c=repCalc(r); tNorm+=c.normH; tOt+=c.otH; tCost+=c.cost;
+      const b=(by[r.site_id]=by[r.site_id]||{normH:0,otH:0,cost:0,reps:[],mats:{},last:null});
+      b.normH+=c.normH; b.otH+=c.otH; b.cost+=c.cost; b.reps.push(r);
+      if(!b.last||r.report_date>b.last) b.last=r.report_date;
+      (r.materials||[]).forEach(m=>{const k=`${m.name} (${m.unit||"nos"})`; b.mats[k]=(b.mats[k]||0)+(+m.qty||0);});
+    });
+    $("dBoard").innerHTML =
+      stat(menToday,"Men on site today")+stat(n1(tNorm+tOt),"Man-hours in range")+
+      stat(n1(tOt),"OT hours")+stat(reps.length,"Reports filed")+
+      (ME.role==="admin"?stat(money(tCost),"Labour cost (range)"):"");
+    $("dSites").innerHTML = SITES.filter(s=>s.active||by[s.id]).map(s=>{
+      const d=by[s.id];
+      if(!d) return `<div class="card sitecard"><h3>${esc(s.name)}</h3><div class="muted" style="font-size:13px">${esc(s.client_name||"")}</div><p class="muted" style="margin-top:8px">No reports in this range.</p></div>`;
+      const latest=d.reps.find(r=>(r.progress_note||"").trim());
+      const mats=Object.entries(d.mats).slice(0,6).map(([k,v])=>`${esc(k)}: <span class="mono">${n1(v)}</span>`).join(" · ");
+      return `<div class="card sitecard">
+        <h3>${esc(s.name)}</h3><div class="muted" style="font-size:13px">${esc(s.client_name||"")} · last report ${fmtD(d.last)}</div>
+        <div class="kv">
+          <div><b>${n1(d.normH+d.otH)}</b><span>man-hours</span></div>
+          <div><b>${n1(d.otH)}</b><span>OT hours</span></div>
+          <div><b>${d.reps.length}</b><span>reports</span></div>
+          ${ME.role==="admin"?`<div><b>${money(d.cost)}</b><span>labour cost</span></div>`:""}
+        </div>
+        ${mats?`<div class="note" style="border-left-color:var(--blue)"><b style="font-size:11px;letter-spacing:.06em">MATERIALS</b><br>${mats}</div>`:""}
+        ${latest?`<div class="note"><b style="font-size:11px;letter-spacing:.06em">LATEST PROGRESS · ${fmtD(latest.report_date)}</b><br>${esc(latest.progress_note)}</div>`:""}
+      </div>`;
+    }).join("") || `<p class="muted">No projects yet.</p>`;
+  }
+  function stat(v,l){ return `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`; }
+}
+async function exportCsv(from,to){
+  const reps=await fetchReports(from,to,null,{costable:true});
+  const rows=[["Date","Day type","Status","Site","Work","Supervisor","Worker name","Trade","Men","Norm hrs each","OT hrs each","Man-hrs","Labour cost","Materials","Equipment","Progress note"]];
+  reps.forEach(r=>{
+    const mats=(r.materials||[]).map(m=>`${m.name} ${m.qty}${m.unit||""}`).join("; ");
+    const eqp=(r.equipment||[]).map(e=>`${e.name} x${e.qty}${e.hours?` (${e.hours}h)`:""}`).join("; ");
+    const mp=(r.manpower&&r.manpower.length)?r.manpower:[{}];
+    mp.forEach((m,i)=>{
+      const c=+m.count||0, nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, rate=mpRate(m);
+      const dayM=r.is_holiday?+SET.holiday_multiplier:1, otEff=r.is_holiday?+SET.holiday_multiplier:+SET.ot_multiplier;
+      rows.push([r.report_date, r.is_holiday?"Holiday/Sun":"Normal", r.status||"submitted", siteName(r.site_id), workName(r.work_item_id), profName(r.supervisor_id),
+        m.worker_name||"", m.trade||"", c||"", nh||"", oh||"", c*(nh+oh)||"", (c*rate*(nh*dayM+oh*otEff)).toFixed(2),
+        i?"":mats, i?"":eqp, i?"":(r.progress_note||"").replace(/\n/g," ")]);
+    });
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download=`sitetrack_${from}_to_${to}.csv`; a.click();
+}
+
+/* ================= ADMIN: P&L ================= */
+async function vPL(){
+  $("main").innerHTML=`
+    <div class="flexbar">
+      <div style="min-width:240px"><label>Project</label>
+        <select id="pSite">${SITES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+      <button class="btn sm" id="pGo">Load</button>
+      <div class="checkline" style="min-width:auto"><input type="checkbox" id="pAppr"><label for="pAppr" style="margin:0;text-transform:none;font-size:13px;color:var(--text)">Approved reports only</label></div>
+    </div>
+    <div id="pBody"></div>`;
+  $("pGo").onclick=render; $("pAppr").onchange=render;
+  if(SITES.length) render(); else $("pBody").innerHTML=`<p class="muted">Add a project first.</p>`;
+
+  async function render(){
+    const sid=$("pSite").value; const site=SITES.find(s=>s.id===sid);
+    const approvedOnly=$("pAppr").checked;
+    const [reps,{data:costs},{data:vos}] = await Promise.all([
+      fetchReports(null,null,sid,{costable:true,approvedOnly}),
+      sb.from("project_costs").select("*").eq("site_id",sid).order("cost_date",{ascending:false}),
+      sb.from("variations").select("*").eq("site_id",sid).order("vo_date",{ascending:false})
+    ]);
+    let labour=0, hrs=0; reps.forEach(r=>{const c=repCalc(r); labour+=c.cost; hrs+=c.hrs;});
+    const byCat={}; (costs||[]).forEach(c=>byCat[c.category]=(byCat[c.category]||0)+(+c.amount));
+    const other=(costs||[]).reduce((a,c)=>a+(+c.amount),0);
+    const VO=vos||[];
+    const voApproved=VO.filter(v=>v.status==="approved").reduce((a,v)=>a+(+v.amount||0),0);
+    const voPending=VO.filter(v=>v.status==="pending").reduce((a,v)=>a+(+v.amount||0),0);
+    const totalCost=labour+other, base=+site.contract_value||0, cv=base+voApproved, profit=cv-totalCost;
+    const margin=cv? (profit/cv*100):0;
+    $("pBody").innerHTML=`
+      <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+        <div class="card">
+          <h2 style="font-size:18px;margin-bottom:10px">Profit &amp; loss — ${esc(site.name)}</h2>
+          <div style="display:flex;gap:10px;align-items:end;margin-bottom:12px">
+            <div style="flex:1"><label>Contract / project value (${esc(SET.currency)})</label>
+              <input type="number" id="pCV" min="0" step="any" value="${cv||""}" placeholder="0.00"></div>
+            <button class="btn sm" id="pCVsave">Save</button>
+          </div>
+          <div class="pl-line"><span>Original contract value</span><b>${money(base)}</b></div>
+          <div class="pl-line"><span>Approved variations (${VO.filter(v=>v.status==="approved").length})</span><b>${money(voApproved)}</b></div>
+          <div class="pl-line" style="font-weight:600"><span>Revenue — revised contract sum</span><b>${money(cv)}</b></div>
+          <div class="pl-line"><span>Labour — daily reports · ${n1(hrs)} man-hrs from ${reps.length} ${approvedOnly?"approved ":""}reports</span><b>${money(labour)}</b></div>
+          ${COST_CATS.map(k=>`<div class="pl-line"><span>${esc(k)}${k==="Manpower"?" (additional)":""}</span><b>${money(byCat[k]||0)}</b></div>`).join("")}
+          <div class="pl-line"><span>Total cost</span><b>${money(totalCost)}</b></div>
+          <div class="pl-line total"><span>Profit / (loss)</span>
+            <b class="${profit>=0?"profit-pos":"profit-neg"}">${money(profit)} · ${margin.toFixed(1)}%</b></div>
+          ${voPending?`<div class="note" style="border-left-color:#8A6210">Pending variations not yet in revenue: <b class="mono">${money(voPending)}</b>. If approved, profit becomes <b class="mono">${money(profit+voPending)}</b>.</div>`:""}
+          <p class="muted" style="font-size:12px;margin-top:10px">Labour is auto-computed from daily reports × rates (worker's own rate where set, otherwise trade rate; OT ×${SET.ot_multiplier}, holiday ×${SET.holiday_multiplier}). Rejected reports are excluded.</p>
+        </div>
+        <div class="card">
+          <h2 style="font-size:18px;margin-bottom:10px">Add cost entry</h2>
+          <div class="f3" style="margin-bottom:10px">
+            <div><label>Date</label><input type="date" id="cDate" value="${today()}"></div>
+            <div><label>Category</label><select id="cCat">${COST_CATS.map(c=>`<option>${c}</option>`).join("")}</select></div>
+            <div><label>Amount (${esc(SET.currency)})</label><input type="number" id="cAmt" min="0" step="any"></div>
+          </div>
+          <div style="margin-bottom:10px"><label>Description</label><input id="cDesc" placeholder="e.g. Jotun paint 20L × 10, scissor lift rental"></div>
+          <button class="btn sm" id="cAdd">Add cost</button>
+          <div class="tblwrap" style="margin-top:14px"><table class="tbl">
+            <tr><th>Date</th><th>Category</th><th>Description</th><th style="text-align:right">Amount</th><th></th></tr>
+            ${(costs||[]).map(c=>`<tr><td class="mono">${fmtD(c.cost_date)}</td><td>${esc(c.category)}</td><td>${esc(c.description)}</td><td class="num">${money(c.amount)}</td>
+              <td style="text-align:right"><button class="btn danger sm" data-cdel="${c.id}">×</button></td></tr>`).join("")||`<tr><td colspan="5" class="muted">No cost entries yet.</td></tr>`}
+          </table></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2 style="font-size:18px;margin-bottom:10px">Variations / VO register — ${esc(site.name)}</h2>
+        <div class="f3" style="margin-bottom:10px">
+          <div><label>VO no.</label><input id="vNo" placeholder="VO-01"></div>
+          <div><label>Date</label><input type="date" id="vDate" value="${today()}"></div>
+          <div><label>Amount (${esc(SET.currency)})</label><input type="number" step="any" id="vAmt" placeholder="0.00"></div>
+        </div>
+        <div class="f2" style="margin-bottom:10px">
+          <div><label>Description / instruction reference</label><input id="vDesc" placeholder="e.g. Additional 2 hr firestop to CP670 openings, CVI-14"></div>
+          <div><label>Status</label><select id="vStat"><option value="pending">Pending client approval</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+        </div>
+        <button class="btn sm" id="vAdd">Add variation</button>
+        <div class="tblwrap" style="margin-top:14px"><table class="tbl">
+          <tr><th>VO no.</th><th>Date</th><th>Description</th><th style="text-align:right">Amount</th><th>Status</th><th></th></tr>
+          ${VO.map(v=>`<tr><td class="mono">${esc(v.vo_no||"—")}</td><td class="mono">${fmtD(v.vo_date)}</td><td>${esc(v.description||"")}</td>
+            <td class="num">${money(v.amount)}</td>
+            <td><span class="pill ${v.status==="approved"?"approved":v.status==="rejected"?"rejected":"pending"}">${esc(v.status)}</span></td>
+            <td style="text-align:right;white-space:nowrap">
+              ${v.status!=="approved"?`<button class="btn sec sm" data-vok="${v.id}">Approve</button>`:""}
+              ${v.status!=="rejected"?`<button class="btn sec sm" data-vno="${v.id}">Reject</button>`:""}
+              <button class="btn danger sm" data-vdel="${v.id}">×</button></td></tr>`).join("")
+            ||`<tr><td colspan="6" class="muted">No variations recorded.</td></tr>`}
+          <tfoot><tr><td colspan="3">Approved total (added to revenue)</td><td class="num">${money(voApproved)}</td><td colspan="2"></td></tr></tfoot>
+        </table></div>
+      </div>`;
+    $("vAdd").onclick=async()=>{
+      if(!(+$("vAmt").value)) return;
+      const {error}=await sb.from("variations").insert({site_id:sid,vo_no:$("vNo").value.trim()||null,vo_date:$("vDate").value,
+        description:$("vDesc").value.trim(),amount:+$("vAmt").value,status:$("vStat").value});
+      if(error) return alert(error.message);
+      $("vNo").value=""; $("vDesc").value=""; $("vAmt").value=""; render();
+    };
+    const setVo=async(id,st)=>{ await sb.from("variations").update({status:st}).eq("id",id); render(); };
+    $("pBody").querySelectorAll("[data-vok]").forEach(b=>b.onclick=()=>setVo(b.dataset.vok,"approved"));
+    $("pBody").querySelectorAll("[data-vno]").forEach(b=>b.onclick=()=>setVo(b.dataset.vno,"rejected"));
+    $("pBody").querySelectorAll("[data-vdel]").forEach(b=>b.onclick=async()=>{
+      if(!confirm("Delete this variation?"))return;
+      await sb.from("variations").delete().eq("id",b.dataset.vdel); render();
+    });
+    $("pCVsave").onclick=async()=>{ await sb.from("sites").update({contract_value:+$("pCV").value||0}).eq("id",sid); await loadBase(); render(); };
+    $("cAdd").onclick=async()=>{
+      if(!(+$("cAmt").value)) return;
+      await sb.from("project_costs").insert({site_id:sid,cost_date:$("cDate").value,category:$("cCat").value,description:$("cDesc").value.trim(),amount:+$("cAmt").value});
+      render();
+    };
+    $("pBody").querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{ await sb.from("project_costs").delete().eq("id",b.dataset.cdel); render(); });
+  }
+}
+
+/* ================= ADMIN: RATES & SETTINGS ================= */
+async function vRates(){
+  $("main").innerHTML=`
+    <div class="grid" style="grid-template-columns:1.4fr 1fr;align-items:start">
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">Manpower rates (per hour)</h2>
+        <div class="tblwrap"><table class="tbl" id="rTbl">
+          <tr><th>Trade / role</th><th style="text-align:right">Rate (${esc(SET.currency)}/hr)</th><th>Status</th><th></th></tr>
+          ${TRADES.map(t=>`<tr>
+            <td>${esc(t.name)}</td>
+            <td class="num"><input type="number" step="any" min="0" value="${t.rate}" data-rate="${t.id}" style="max-width:110px;text-align:right"></td>
+            <td><span class="pill ${t.active?"ongoing":"inactive"}">${t.active?"active":"hidden"}</span></td>
+            <td style="text-align:right"><button class="btn sec sm" data-ttog="${t.id}">${t.active?"Hide":"Show"}</button></td></tr>`).join("")}
+        </table></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input id="tNew" placeholder="Add new trade / resource, e.g. Scaffolder" style="flex:1">
+          <button class="btn sec sm" id="tNewAdd">Add</button>
+        </div>
+        <div style="margin-top:12px"><button class="btn" id="rSave">Save all rates</button> <span id="rMsg" class="muted" style="font-size:13px"></span></div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">Company standards</h2>
+        <div class="grid">
+          <div><label>Standard working hours / day</label><input type="number" step="any" id="sHrs" value="${SET.std_hours}"></div>
+          <div><label>OT multiplier (weekday OT)</label><input type="number" step="any" id="sOt" value="${SET.ot_multiplier}"></div>
+          <div><label>Holiday / Sunday multiplier</label><input type="number" step="any" id="sHol" value="${SET.holiday_multiplier}"></div>
+          <div><label>Currency</label><input id="sCur" value="${esc(SET.currency)}"></div>
+          <button class="btn" id="sSave">Save standards</button>
+          <span id="sMsg" class="muted" style="font-size:13px"></span>
+        </div>
+        <p class="muted" style="font-size:12px;margin-top:12px">Labour cost rule: normal hrs × rate (× holiday multiplier on Sundays/PH) + OT hrs × rate × OT multiplier (holiday multiplier on Sundays/PH).</p>
+      </div>
+    </div>`;
+  $("rSave").onclick=async()=>{
+    const ups=[...document.querySelectorAll("[data-rate]")].map(i=>sb.from("trades").update({rate:+i.value||0}).eq("id",i.dataset.rate));
+    await Promise.all(ups); $("rMsg").textContent="Saved."; loadBase();
+  };
+  document.querySelectorAll("[data-ttog]").forEach(b=>b.onclick=async()=>{
+    const t=TRADES.find(x=>x.id===b.dataset.ttog);
+    await sb.from("trades").update({active:!t.active}).eq("id",t.id); openTab("rates");
+  });
+  $("tNewAdd").onclick=async()=>{
+    const n=$("tNew").value.trim(); if(!n)return;
+    await sb.from("trades").insert({name:n}); openTab("rates");
+  };
+  $("sSave").onclick=async()=>{
+    await sb.from("settings").update({std_hours:+$("sHrs").value||8, ot_multiplier:+$("sOt").value||1.5, holiday_multiplier:+$("sHol").value||2, currency:$("sCur").value.trim()||"SGD"}).eq("id",1);
+    $("sMsg").textContent="Saved."; loadBase();
+  };
+}
+
+/* ================= REPORTS LIST (admin) ================= */
+async function vReports(){
+  const [dF,dT]=rangeDefaults();
+  $("main").innerHTML=`
+    <div class="flexbar">
+      <div><label>From</label><input type="date" id="rFrom" value="${dF}"></div>
+      <div><label>To</label><input type="date" id="rTo" value="${dT}"></div>
+      <div><label>Site</label><select id="rSite"><option value="">All</option>${SITES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+      <div><label>Status</label><select id="rStat"><option value="">All</option><option value="submitted">Pending review</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+      <button class="btn sm" id="rGo">Apply</button>
+    </div><div id="rCount" class="muted" style="font-size:13px;margin-bottom:10px"></div><div id="rList"></div>`;
+  $("rGo").onclick=render; await render();
+  async function render(){
+    const reps=await fetchReports($("rFrom").value,$("rTo").value,$("rSite").value||null,{status:$("rStat").value||null});
+    const pend=reps.filter(r=>(r.status||"submitted")==="submitted").length;
+    $("rCount").textContent=`${reps.length} report(s)${pend?` · ${pend} awaiting your review`:""}`;
+    $("rList").innerHTML=reps.length?reps.map(r=>repCard(r,true)).join(""):`<p class="muted">No reports for this filter.</p>`;
+    wireRepActions($("rList"),render,reps);
+  }
+}
+function repCard(r,adminView){
+  const c=repCalc(r);
+  const st=r.status||"submitted";
+  const stLbl={submitted:"PENDING",approved:"APPROVED",rejected:"REJECTED"}[st];
+  const named=(r.manpower||[]).some(m=>m.worker_id||m.worker_name);
+  const mpRows=(r.manpower||[]).map(m=>{
+    const nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, cnt=+m.count||0;
+    return `<tr>${named?`<td>${esc(m.worker_name||"—")}</td>`:""}<td>${esc(m.trade)}</td><td class="num">${cnt}</td><td class="num">${nh}</td><td class="num">${oh}</td><td class="num">${n1(cnt*(nh+oh))}</td></tr>`;
+  }).join("");
+  const matRows=(r.materials||[]).map(m=>`<tr><td>${esc(m.name)}</td><td class="num">${m.qty}</td><td>${esc(m.unit||"")}</td></tr>`).join("");
+  const eqRows=(r.equipment||[]).map(e=>`<tr><td>${esc(e.name)}</td><td class="num">${e.qty}</td><td class="num">${e.hours||""}</td></tr>`).join("");
+  return `<details class="rep"><summary>
+      <span class="mono">${fmtD(r.report_date)}</span>
+      <span class="pill ${st}">${stLbl}</span>
+      ${r.is_holiday?`<span class="pill hol">HOL/SUN</span>`:""}
+      <b>${esc(siteName(r.site_id))}</b>
+      <span class="muted">${esc(workName(r.work_item_id))}</span>
+      ${adminView?`<span class="muted">· ${esc(profName(r.supervisor_id))}</span>`:""}
+      <span style="margin-left:auto" class="mono">${c.men} men · ${n1(c.hrs)} hrs${(adminView&&ME.role==="admin")?` · ${money(c.cost)}`:""}</span>
+    </summary><div class="body">
+      ${mpRows?`<div class="tblwrap"><table class="tbl"><tr>${named?"<th>Worker</th>":""}<th>Trade</th><th style="text-align:right">Men</th><th style="text-align:right">Norm hrs</th><th style="text-align:right">OT hrs</th><th style="text-align:right">Man-hrs</th></tr>${mpRows}</table></div>`:""}
+      ${matRows?`<h3 style="font-size:14px;margin:12px 0 4px">Materials</h3><div class="tblwrap"><table class="tbl"><tr><th>Material</th><th style="text-align:right">Qty</th><th>Unit</th></tr>${matRows}</table></div>`:""}
+      ${eqRows?`<h3 style="font-size:14px;margin:12px 0 4px">Equipment</h3><div class="tblwrap"><table class="tbl"><tr><th>Equipment</th><th style="text-align:right">Qty</th><th style="text-align:right">Hours</th></tr>${eqRows}</table></div>`:""}
+      ${r.progress_note?`<div class="note">${esc(r.progress_note)}</div>`:""}
+      ${(r.photos||[]).length?`<h3 style="font-size:14px;margin:12px 0 0">Site photos (${(r.photos||[]).length})</h3><div class="photos" data-ph="${r.id}"><span class="muted" style="font-size:12px">Loading…</span></div>`:""}
+      ${r.review_note?`<div class="note" style="border-left-color:${st==="rejected"?"var(--red)":"var(--green)"}"><b style="font-size:11px;letter-spacing:.06em">REVIEW NOTE</b><br>${esc(r.review_note)}</div>`:""}
+      ${(r.reviewed_at&&adminView)?`<p class="hint">${stLbl.toLowerCase()} by ${esc(profName(r.reviewed_by)||"admin")} on ${fmtD(String(r.reviewed_at).slice(0,10))}</p>`:""}
+      <div class="revbar">
+        ${(ME.role==="admin")?`
+          ${st!=="approved"?`<button class="btn sm" data-appr="${r.id}">Approve</button>`:""}
+          ${st!=="rejected"?`<button class="btn sec sm" data-rej="${r.id}">Reject…</button>`:""}
+          <button class="btn sec sm" data-edit="${r.id}">Edit</button>
+          <button class="btn danger sm" data-del="${r.id}">Delete</button>`
+        :`${st!=="approved"?`<button class="btn sec sm" data-edit="${r.id}">Edit report</button>`:`<span class="muted" style="font-size:13px">Approved — locked for editing.</span>`}
+          ${st==="submitted"?`<button class="btn danger sm" data-del="${r.id}">Delete</button>`:""}`}
+      </div>
+    </div></details>`;
+}
+/* wires approve / reject / edit / delete + loads signed photo URLs */
+function wireRepActions(root,refresh,reps){
+  root.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Delete this report? This cannot be undone."))return;
+    const r=(reps||[]).find(x=>x.id===b.dataset.del);
+    const paths=((r&&r.photos)||[]).map(p=>p.path).filter(Boolean);
+    if(paths.length) await sb.storage.from(PHOTO_BUCKET).remove(paths);
+    await sb.from("daily_reports").delete().eq("id",b.dataset.del); refresh();
+  });
+  root.querySelectorAll("[data-appr]").forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    const {error}=await sb.from("daily_reports").update({status:"approved",reviewed_by:ME.id,reviewed_at:new Date().toISOString(),review_note:null}).eq("id",b.dataset.appr);
+    if(error) alert(error.message); refresh();
+  });
+  root.querySelectorAll("[data-rej]").forEach(b=>b.onclick=async()=>{
+    const note=prompt("Reason for rejection (the supervisor will see this and can correct the report):");
+    if(note===null) return;
+    b.disabled=true;
+    const {error}=await sb.from("daily_reports").update({status:"rejected",reviewed_by:ME.id,reviewed_at:new Date().toISOString(),review_note:note}).eq("id",b.dataset.rej);
+    if(error) alert(error.message); refresh();
+  });
+  root.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{
+    const r=(reps||[]).find(x=>x.id===b.dataset.edit);
+    if(r) openTab("entry",r);
+  });
+  hydratePhotos(root,reps);
+}
+async function hydratePhotos(root,reps){
+  const boxes=[...root.querySelectorAll("[data-ph]")]; if(!boxes.length) return;
+  const paths=[]; boxes.forEach(bx=>{
+    const r=(reps||[]).find(x=>x.id===bx.dataset.ph);
+    ((r&&r.photos)||[]).forEach(p=>p.path&&paths.push(p.path));
+  });
+  if(!paths.length) return;
+  const {data,error}=await sb.storage.from(PHOTO_BUCKET).createSignedUrls(paths,3600);
+  const map={}; if(!error)(data||[]).forEach(d=>{ if(d.signedUrl) map[d.path]=d.signedUrl; });
+  boxes.forEach(bx=>{
+    const r=(reps||[]).find(x=>x.id===bx.dataset.ph);
+    bx.innerHTML=((r&&r.photos)||[]).map(p=>map[p.path]
+      ?`<div class="thumb"><a href="${map[p.path]}" target="_blank" rel="noopener"><img loading="lazy" src="${map[p.path]}" alt="${esc(p.name||"site photo")}"></a></div>`
+      :`<div class="thumb muted" style="padding:10px;font-size:11px">unavailable</div>`).join("");
+  });
+}
+
+/* ================= PROJECTS (admin full) ================= */
+async function vSites(){
+  $("main").innerHTML=`
+    <div class="card" style="margin-bottom:16px">
+      <h2 style="font-size:18px;margin-bottom:12px">Add project</h2>
+      <div class="f3">
+        <div><label>Project / site name</label><input id="sName" placeholder="e.g. PCS Ayer Merbau"></div>
+        <div><label>Client</label><input id="sClient" placeholder="e.g. PCS Pte Ltd"></div>
+        <div style="align-self:end"><button class="btn" id="sAdd" style="width:100%">Add project</button></div>
+      </div><div id="sMsg"></div>
+    </div>
+    <div class="grid" id="sList"></div>`;
+  $("sAdd").onclick=async()=>{
+    const name=$("sName").value.trim(); if(!name)return;
+    const {error}=await sb.from("sites").insert({name,client_name:$("sClient").value.trim()});
+    $("sMsg").innerHTML=error?`<div class="msg err">${esc(error.message)}</div>`:"";
+    if(!error) openTab("sites");
+  };
+  $("sList").innerHTML = SITES.map(s=>{
+    const works=WORKS.filter(w=>w.site_id===s.id);
+    return `<div class="card">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <h3 style="font-size:19px">${esc(s.name)}</h3>
+        <span class="muted" style="font-size:13px">${esc(s.client_name||"")}</span>
+        <span class="pill ${s.active?"ongoing":"inactive"}">${s.active?"active":"inactive"}</span>
+        <button class="btn sec sm" style="margin-left:auto" data-tog="${s.id}">${s.active?"Deactivate":"Reactivate"}</button>
+        <button class="btn danger sm" data-sdel="${s.id}">Delete</button>
+      </div>
+      <div class="tblwrap" style="margin-top:10px"><table class="tbl">
+        ${works.map(w=>`<tr><td>${esc(w.name)}</td><td><span class="pill ${w.status}">${w.status}</span></td>
+          <td style="text-align:right"><select data-ws="${w.id}" style="width:auto;padding:4px 8px;font-size:13px">
+            ${["ongoing","completed","on-hold"].map(st=>`<option ${st===w.status?"selected":""}>${st}</option>`).join("")}
+          </select></td></tr>`).join("")||`<tr><td class="muted">No works added yet.</td></tr>`}
+      </table></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input placeholder="New work under this project" data-wi="${s.id}" style="flex:1">
+        <button class="btn sec sm" data-wadd="${s.id}">Add work</button>
+      </div>
+    </div>`;
+  }).join("")||`<p class="muted">No projects yet.</p>`;
+  $("sList").querySelectorAll("[data-tog]").forEach(b=>b.onclick=async()=>{
+    const s=SITES.find(x=>x.id===b.dataset.tog);
+    await sb.from("sites").update({active:!s.active}).eq("id",s.id); openTab("sites");
+  });
+  $("sList").querySelectorAll("[data-sdel]").forEach(b=>b.onclick=async()=>{
+    const s=SITES.find(x=>x.id===b.dataset.sdel);
+    if(!confirm(`Delete project "${s.name}"?\n\nThis permanently removes the project AND all its daily reports, works and cost entries. This cannot be undone.`))return;
+    if(prompt(`Type DELETE to confirm removing "${s.name}"`)!=="DELETE")return;
+    const {error}=await sb.from("sites").delete().eq("id",s.id);
+    if(error) alert(error.message); else openTab("sites");
+  });
+  $("sList").querySelectorAll("[data-wadd]").forEach(b=>b.onclick=async()=>{
+    const inp=$("main").querySelector(`[data-wi="${b.dataset.wadd}"]`);
+    if(!inp.value.trim())return;
+    await sb.from("work_items").insert({site_id:b.dataset.wadd,name:inp.value.trim()}); openTab("sites");
+  });
+  $("sList").querySelectorAll("[data-ws]").forEach(sel=>sel.onchange=async()=>{
+    await sb.from("work_items").update({status:sel.value}).eq("id",sel.dataset.ws);
+  });
+}
+
+/* ================= SUPERVISOR: ADD PROJECT ================= */
+async function vAddProj(){
+  $("main").innerHTML=`
+    <div class="card" style="max-width:560px;margin:0 auto">
+      <h2 style="font-size:18px;margin-bottom:12px">Add project</h2>
+      <div class="grid">
+        <div><label>Project / site name</label><input id="apName"></div>
+        <div><label>Client</label><input id="apClient"></div>
+        <div><label>First work item (optional)</label><input id="apWork" placeholder="e.g. Partition & painting"></div>
+        <button class="btn" id="apAdd">Add project</button>
+      </div>
+      <div id="apMsg"></div>
+      <h3 style="font-size:15px;margin:18px 0 8px">Existing projects</h3>
+      <div class="tblwrap"><table class="tbl">${SITES.map(s=>`<tr><td>${esc(s.name)}</td><td class="muted">${esc(s.client_name||"")}</td><td><span class="pill ${s.active?"ongoing":"inactive"}">${s.active?"active":"inactive"}</span></td></tr>`).join("")}</table></div>
+    </div>`;
+  $("apAdd").onclick=async()=>{
+    const name=$("apName").value.trim(); if(!name){ $("apMsg").innerHTML=`<div class="msg err">Enter a project name.</div>`; return; }
+    const {data,error}=await sb.from("sites").insert({name,client_name:$("apClient").value.trim()}).select().single();
+    if(error){ $("apMsg").innerHTML=`<div class="msg err">${esc(error.message)}</div>`; return; }
+    const w=$("apWork").value.trim();
+    if(w) await sb.from("work_items").insert({site_id:data.id,name:w});
+    $("apMsg").innerHTML=`<div class="msg ok">Project "${esc(name)}" added.</div>`;
+    loadBase();
+  };
+}
+
+
+/* ================= ADMIN: IMPORT / EXPORT ================= */
+async function vImport(){
+  $("main").innerHTML=`
+    <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">1 — Download standard template</h2>
+        <p style="font-size:14px;margin-bottom:12px">Excel template for past manpower allocation. One row per trade per day. Fill it (or copy from your existing sheets) and upload it on the right — projects, works and reports are created automatically and flow straight into man-hours and P&amp;L.</p>
+        <button class="btn" id="xTpl">Download template (.xlsx)</button>
+        <div class="note" style="margin-top:14px"><b style="font-size:11px;letter-spacing:.06em">TEMPLATE COLUMNS</b><br>
+        Date (DD/MM/YYYY) · Project · Work (optional) · Trade · Men · Normal Hours · OT Hours · Holiday (Y/N) · Remarks</div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">2 — Upload filled template</h2>
+        <input type="file" id="xFile" accept=".xlsx,.xls,.csv" style="margin-bottom:12px">
+        <button class="btn" id="xGo">Import</button>
+        <div id="xMsg"></div>
+      </div>
+    </div>`;
+
+  $("xTpl").onclick=()=>{
+    const hdr=["Date","Project","Work","Trade","Men","Normal Hours","OT Hours","Holiday (Y/N)","Remarks"];
+    const eg=[["01/07/2026","PCS Ayer Merbau","Flare Shelter","General Worker",6,8,2,"N","Blasting & priming"],
+              ["01/07/2026","PCS Ayer Merbau","Flare Shelter","Welder",2,8,0,"N",""],
+              ["05/07/2026","Sembcorp Cogen","","Fitter",4,8,4,"Y","Sunday shutdown work"]];
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.aoa_to_sheet([hdr,...eg]);
+    ws["!cols"]=hdr.map((h,i)=>({wch:[12,24,22,22,6,13,9,13,30][i]}));
+    XLSX.utils.book_append_sheet(wb,ws,"Manpower");
+    const tw=XLSX.utils.aoa_to_sheet([["Valid trades (exact spelling)"],...TRADES.filter(t=>t.active).map(t=>[t.name])]);
+    tw["!cols"]=[{wch:28}];
+    XLSX.utils.book_append_sheet(wb,tw,"Trades");
+    XLSX.writeFile(wb,"SiteTrack_Manpower_Template.xlsx");
+  };
+
+  function parseDate(v){
+    if(v==null||v==="") return null;
+    if(typeof v==="number"){ const d=XLSX.SSF.parse_date_code(v); if(!d)return null;
+      return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`; }
+    const s=String(v).trim();
+    let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if(m) return `${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`;
+    m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+    if(m){ let y=m[3].length===2?"20"+m[3]:m[3]; return `${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`; }
+    return null;
+  }
+
+  $("xGo").onclick=async()=>{
+    const f=$("xFile").files[0];
+    if(!f){ $("xMsg").innerHTML=`<div class="msg err">Choose the filled template file first.</div>`; return; }
+    $("xMsg").innerHTML=`<div class="msg ok">Reading file…</div>`;
+    try{
+      const wb=XLSX.read(await f.arrayBuffer());
+      const ws=wb.Sheets["Manpower"]||wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+      if(!rows.length) throw new Error("No data rows found.");
+      const errs=[]; const parsed=[];
+      rows.forEach((r,i)=>{
+        const get=k=>{ const key=Object.keys(r).find(x=>x.toLowerCase().trim().startsWith(k)); return key?r[key]:""; };
+        const date=parseDate(get("date")); const proj=String(get("project")).trim();
+        const trade=String(get("trade")).trim(); const men=+get("men")||0;
+        if(!date||!proj||!trade||!men){ if(String(get("project"))||String(get("trade"))) errs.push(`Row ${i+2}: needs Date, Project, Trade and Men`); return; }
+        parsed.push({date,proj,work:String(get("work")).trim(),trade,men,
+          nh:+get("normal")||+SET.std_hours, oh:+get("ot")||0,
+          hol:/^y/i.test(String(get("holiday")).trim()), rem:String(get("remarks")).trim()});
+      });
+      if(!parsed.length) throw new Error("No valid rows. "+(errs[0]||""));
+      // ensure projects
+      const projNames=[...new Set(parsed.map(p=>p.proj))];
+      for(const pn of projNames){
+        if(!SITES.find(s=>s.name.toLowerCase()===pn.toLowerCase())){
+          const {data,error}=await sb.from("sites").insert({name:pn}).select().single();
+          if(error) throw error; SITES.push(data);
+        }
+      }
+      // ensure works
+      for(const p of parsed){
+        if(!p.work) continue;
+        const site=SITES.find(s=>s.name.toLowerCase()===p.proj.toLowerCase());
+        if(!WORKS.find(w=>w.site_id===site.id&&w.name.toLowerCase()===p.work.toLowerCase())){
+          const {data,error}=await sb.from("work_items").insert({site_id:site.id,name:p.work}).select().single();
+          if(error) throw error; WORKS.push(data);
+        }
+      }
+      // ensure trades
+      const tNames=[...new Set(parsed.map(p=>p.trade))];
+      for(const tn of tNames){
+        if(!TRADES.find(t=>t.name.toLowerCase()===tn.toLowerCase())){
+          const {data,error}=await sb.from("trades").insert({name:tn}).select().single();
+          if(error) throw error; TRADES.push(data);
+        }
+      }
+      // group into reports: date + project + work + holiday
+      const groups={};
+      parsed.forEach(p=>{
+        const site=SITES.find(s=>s.name.toLowerCase()===p.proj.toLowerCase());
+        const work=p.work?WORKS.find(w=>w.site_id===site.id&&w.name.toLowerCase()===p.work.toLowerCase()):null;
+        const trade=TRADES.find(t=>t.name.toLowerCase()===p.trade.toLowerCase());
+        const key=[p.date,site.id,work?work.id:"",p.hol].join("|");
+        (groups[key]=groups[key]||{report_date:p.date,site_id:site.id,work_item_id:work?work.id:null,
+          supervisor_id:ME.id,is_holiday:p.hol,status:"approved",reviewed_by:ME.id,reviewed_at:new Date().toISOString(),
+          manpower:[],materials:[],equipment:[],progress_note:""}).manpower
+          .push({trade:trade.name,count:p.men,norm_hours:p.nh,ot_hours:p.oh});
+        if(p.rem){ const g=groups[key]; g.progress_note=g.progress_note?g.progress_note+"; "+p.rem:p.rem; }
+      });
+      const payloads=Object.values(groups);
+      for(let i=0;i<payloads.length;i+=50){
+        const {error}=await sb.from("daily_reports").insert(payloads.slice(i,i+50));
+        if(error) throw error;
+      }
+      $("xMsg").innerHTML=`<div class="msg ok">Imported ${parsed.length} manpower rows → ${payloads.length} daily reports across ${projNames.length} project(s).${errs.length?" Skipped: "+errs.length+" row(s).":""} Man-hours and labour cost are now live in the Dashboard and P&L.</div>`;
+      loadBase();
+    }catch(e){ $("xMsg").innerHTML=`<div class="msg err">${esc(e.message||e)}</div>`; }
+  };
+}
+
+/* ================= SUPERVISOR IDS ================= */
+async function vTeam(){
+  $("main").innerHTML=`
+    <div class="card" style="margin-bottom:16px">
+      <h2 style="font-size:18px;margin-bottom:12px">Create supervisor ID</h2>
+      <div class="f3">
+        <div><label>Full name</label><input id="tName"></div>
+        <div><label>Email (login ID)</label><input id="tEmail" type="email"></div>
+        <div><label>Password (min 6 chars)</label><input id="tPass"></div>
+      </div>
+      <div style="margin-top:12px"><button class="btn" id="tAdd">Create account</button></div>
+      <div id="tMsg"></div>
+    </div>
+    <div class="card"><h2 style="font-size:18px;margin-bottom:10px">Team</h2>
+    <div class="tblwrap"><table class="tbl"><tr><th>Name</th><th>Role</th><th>Status</th><th></th></tr>
+    ${PROFILES.map(p=>`<tr><td>${esc(p.full_name)||'<span class="muted">(no name)</span>'}</td>
+      <td><span class="pill ${p.role==='admin'?'completed':'ongoing'}">${p.role}</span></td>
+      <td><span class="pill ${p.active?'ongoing':'inactive'}">${p.active?"active":"deactivated"}</span></td>
+      <td style="text-align:right">${p.id===ME.id?'<span class="muted" style="font-size:12px">you</span>':`<button class="btn sec sm" data-ptog="${p.id}">${p.active?"Deactivate":"Reactivate"}</button>`}</td></tr>`).join("")}
+    </table></div></div>`;
+  $("tAdd").onclick=async()=>{
+    const name=$("tName").value.trim(), email=$("tEmail").value.trim(), pass=$("tPass").value;
+    if(!name||!email||pass.length<6){ $("tMsg").innerHTML=`<div class="msg err">Fill all fields; password needs 6+ characters.</div>`; return; }
+    const {error}=await sb2.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+    $("tMsg").innerHTML=error?`<div class="msg err">${esc(error.message)}</div>`
+      :`<div class="msg ok">Created. Share with ${esc(name)}: login <b>${esc(email)}</b> / the password you entered. They open this same website and sign in.</div>`;
+    if(!error){ $("tName").value=$("tEmail").value=$("tPass").value=""; }
+  };
+  $("main").querySelectorAll("[data-ptog]").forEach(b=>b.onclick=async()=>{
+    const p=PROFILES.find(x=>x.id===b.dataset.ptog);
+    await sb.from("profiles").update({active:!p.active}).eq("id",p.id); openTab("team");
+  });
+}
+
+/* ================= DAILY REPORT ENTRY (supervisor + admin) ================= */
+const DRAFT_KEY="vst_draft_v4", QUEUE_KEY="vst_queue_v4";
+let PHOTOS=[];      /* newly picked photos, not yet uploaded: {name,blob,url} */
+let KEEP=[];        /* photos already in storage that we keep on edit: {path,name} */
+let MPMODE="trade";
+
+function tradeOptions(sel){ return TRADES.filter(t=>t.active||t.name===sel).map(t=>`<option ${t.name===sel?"selected":""}>${esc(t.name)}</option>`).join(""); }
+function workerOptions(sel){
+  const act=WORKERS.filter(w=>w.active||w.id===sel);
+  const byTrade={}; act.forEach(w=>{ (byTrade[w.trade||"Unassigned"]=byTrade[w.trade||"Unassigned"]||[]).push(w); });
+  return Object.keys(byTrade).sort().map(t=>`<optgroup label="${esc(t)}">`+
+    byTrade[t].map(w=>`<option value="${w.id}" ${w.id===sel?"selected":""}>${esc(w.name)}${w.emp_no?` (${esc(w.emp_no)})`:""}</option>`).join("")+`</optgroup>`).join("");
+}
+function mpRow(m){
+  m=m||{};
+  return `<div class="rowline" data-kind="mp">
+    <select class="c1"><option value="">— trade —</option>${tradeOptions(m.trade)}</select>
+    <input class="c2" type="number" min="0" step="1" placeholder="Men" value="${m.count??""}">
+    <input class="c3" type="number" min="0" step="any" placeholder="Norm hrs" value="${m.norm_hours??m.hours??SET.std_hours}">
+    <input class="c4" type="number" min="0" step="any" placeholder="OT hrs" value="${m.ot_hours||""}">
+    <button type="button" class="x" title="Remove row">×</button></div>`;
+}
+function wkRow(m){
+  m=m||{};
+  return `<div class="rowline wk" data-kind="wk">
+    <select class="c1"><option value="">— worker —</option>${workerOptions(m.worker_id)}</select>
+    <input class="c3" type="number" min="0" step="any" placeholder="Norm hrs" value="${m.norm_hours??m.hours??SET.std_hours}">
+    <input class="c4" type="number" min="0" step="any" placeholder="OT hrs" value="${m.ot_hours||""}">
+    <button type="button" class="x" title="Remove row">×</button></div>`;
+}
+function simpleRow(kind,d){
+  d=d||{};
+  const ph=kind==="mat"?["Material (e.g. Cement)","Qty","Unit (bags, m, L)"]:["Equipment (e.g. Scissor lift)","Qty","Hours"];
+  const third = kind==="mat" ? (d.unit||"") : (d.hours??"");
+  return `<div class="rowline r3" data-kind="${kind}">
+    <input class="c1" placeholder="${ph[0]}" value="${esc(d.name||"")}">
+    <input class="c2" type="number" min="0" step="any" placeholder="${ph[1]}" value="${d.qty??""}">
+    <input class="c3" ${kind==="mat"?"":'type="number" min="0" step="any"'} placeholder="${ph[2]}" value="${esc(String(third))}">
+    <button type="button" class="x" title="Remove row">×</button></div>`;
+}
+function wireRowset(fs){
+  const add=fs.querySelector(".addrow"); if(!add) return;
+  add.onclick=()=>{
+    const k=fs.dataset.kind;
+    fs.querySelector(".rowset").insertAdjacentHTML("beforeend", k==="mp"?(MPMODE==="worker"?wkRow():mpRow()):simpleRow(k));
+    wireX(fs); saveDraft();
+  };
+  wireX(fs);
+}
+function wireX(fs){ fs.querySelectorAll(".x").forEach(x=>x.onclick=()=>{ x.parentElement.remove(); saveDraft(); }); }
+
+/* ---------- photo helpers ---------- */
+async function shrink(file,max,q){
+  max=max||1400; q=q||0.68;
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+    const sc=Math.min(1,max/Math.max(img.width,img.height));
+    const cv=document.createElement("canvas");
+    cv.width=Math.max(1,Math.round(img.width*sc)); cv.height=Math.max(1,Math.round(img.height*sc));
+    cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+    return await new Promise(res=>cv.toBlob(res,"image/jpeg",q));
+  }catch(e){ return file; }
+  finally{ URL.revokeObjectURL(url); }
+}
+const b2d = blob => new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); });
+function d2b(dataUrl){
+  const [head,body]=dataUrl.split(","); const mime=(head.match(/:(.*?);/)||[])[1]||"image/jpeg";
+  const bin=atob(body); const u=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  return new Blob([u],{type:mime});
+}
+const rndName = () => (crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2))+".jpg";
+
+/* ---------- offline queue ---------- */
+function qGet(){ try{ return JSON.parse(localStorage.getItem(QUEUE_KEY)||"[]"); }catch(e){ return []; } }
+function qSet(v){ try{ localStorage.setItem(QUEUE_KEY,JSON.stringify(v)); }catch(e){} }
+function netBar(msg,cls){
+  let b=$("offBar");
+  if(!b){ b=document.createElement("div"); b.id="offBar"; document.body.appendChild(b); }
+  if(!msg){ b.style.display="none"; return; }
+  b.className="offbar"+(cls?" "+cls:""); b.textContent=msg; b.style.display="block";
+}
+function netStatus(){
+  const q=qGet().length;
+  if(!navigator.onLine) netBar(`Offline — reports are saved on this device and sent automatically when signal returns.${q?` (${q} waiting)`:""}`);
+  else if(q) netBar(`${q} report(s) waiting to sync…`);
+  else netBar("");
+}
+async function queueReport(payload,photos){
+  const ph=[]; let bytes=0, skipped=0;
+  for(const p of photos){
+    const d=await b2d(p.blob);
+    if(bytes+d.length>2600000 || ph.length>=4){ skipped++; continue; }
+    bytes+=d.length; ph.push({name:p.name,data:d});
+  }
+  const q=qGet(); q.push({payload,photos:ph,at:Date.now()}); qSet(q); netStatus();
+  return skipped;
+}
+async function flushQueue(){
+  if(!ME||!navigator.onLine) return 0;
+  let q=qGet(); if(!q.length) return 0;
+  netBar(`Syncing ${q.length} saved report(s)…`,"sync");
+  const left=[]; let done=0;
+  for(const item of q){
+    try{
+      const photos=(item.photos||[]).map(p=>({name:p.name,blob:d2b(p.data)}));
+      const {error}=await pushReport(item.payload,photos,[],null);
+      if(error) throw error;
+      done++;
+    }catch(e){ left.push(item); }
+  }
+  qSet(left);
+  netBar(done?`${done} report(s) synced.`:"","sync");
+  setTimeout(netStatus,2500);
+  return done;
+}
+/* single write path used by the form and by the queue */
+async function pushReport(payload,newPhotos,keep,editId){
+  const uploaded=[];
+  for(const p of (newPhotos||[])){
+    const path=`${payload.site_id}/${payload.report_date}/${rndName()}`;
+    const {error}=await sb.storage.from(PHOTO_BUCKET).upload(path,p.blob,{contentType:"image/jpeg"});
+    if(error) return {error};
+    uploaded.push({path,name:p.name});
+  }
+  const body=Object.assign({},payload,{photos:(keep||[]).concat(uploaded)});
+  return editId ? await sb.from("daily_reports").update(body).eq("id",editId)
+                : await sb.from("daily_reports").insert(body);
+}
+
+/* ---------- draft autosave ---------- */
+let draftTimer=null;
+function saveDraft(){
+  if(!$("eDate")||$("main").dataset.editing==="1") return;
+  clearTimeout(draftTimer);
+  draftTimer=setTimeout(()=>{
+    try{ localStorage.setItem(DRAFT_KEY,JSON.stringify(Object.assign(collectForm(),{uid:ME.id,at:Date.now()}))); }catch(e){}
+  },400);
+}
+const clearDraft = () => { try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} };
+
+function collectForm(){
+  const mp=[...$("main").querySelectorAll('[data-kind="mp"].rowline')].map(r=>({
+    trade:r.querySelector(".c1").value, count:+r.querySelector(".c2").value||0,
+    norm_hours:+r.querySelector(".c3").value||0, ot_hours:+r.querySelector(".c4").value||0
+  })).filter(m=>m.trade&&m.count>0);
+  const wk=[...$("main").querySelectorAll('[data-kind="wk"].rowline')].map(r=>{
+    const id=r.querySelector(".c1").value, w=workerById(id);
+    return {worker_id:id, worker_name:w?w.name:"", trade:w?w.trade:"", count:1,
+      norm_hours:+r.querySelector(".c3").value||0, ot_hours:+r.querySelector(".c4").value||0};
+  }).filter(m=>m.worker_id);
+  const rd=k=>[...$("main").querySelectorAll(`[data-kind="${k}"].rowline`)].map(r=>({
+    a:r.querySelector(".c1").value.trim(), b:r.querySelector(".c2").value, c:r.querySelector(".c3").value})).filter(r=>r.a);
+  return {
+    report_date:$("eDate").value, site_id:$("eSite").value, work_item_id:$("eWork").value||null,
+    is_holiday:$("eHol").checked, mode:MPMODE, manpower:MPMODE==="worker"?wk:mp,
+    materials:rd("mat").map(r=>({name:r.a,qty:+r.b||0,unit:r.c})),
+    equipment:rd("eq").map(r=>({name:r.a,qty:+r.b||0,hours:+r.c||0})),
+    progress_note:$("eNote").value.trim()
+  };
+}
+
+async function vEntry(rec){
+  const editing = (rec&&rec.id)?rec:null;
+  $("main").dataset.editing = editing?"1":"0";
+  PHOTOS=[]; KEEP = editing?((editing.photos||[]).slice()):[];
+  let draft=null;
+  if(!editing){ try{ const d=JSON.parse(localStorage.getItem(DRAFT_KEY)||"null"); if(d&&d.uid===ME.id) draft=d; }catch(e){} }
+  const src = editing || draft;
+  MPMODE = (src && (src.mode==="worker" || (src.manpower||[]).some(m=>m.worker_id))) ? "worker" : "trade";
+  if(MPMODE==="worker" && !WORKERS.length) MPMODE="trade";
+
+  const activeSites=SITES.filter(s=>s.active||(editing&&s.id===editing.site_id));
+  const mpRows=(src&&(src.manpower||[]).length)
+    ? (src.manpower||[]).map(m=>MPMODE==="worker"?wkRow(m):mpRow(m)).join("")
+    : (MPMODE==="worker"?wkRow():mpRow());
+
+  $("main").innerHTML=`
+    <div class="card" style="max-width:820px;margin:0 auto">
+      <h2 style="font-size:20px;margin-bottom:6px">${editing?"Edit daily site report":"Daily site report"}</h2>
+      ${editing?`<p class="hint" style="margin-bottom:12px">${fmtD(editing.report_date)} · ${esc(siteName(editing.site_id))}${editing.status==="rejected"?` — sent back by the office${editing.review_note?`: “${esc(editing.review_note)}”`:""}. Saving puts it back for review.`:""}</p>`:""}
+      ${draft?`<div class="msg ok" id="dMsgBar">Unsaved draft restored. <button class="btn sec sm" id="dDiscard" style="margin-left:8px">Start fresh</button></div>`:""}
+      <div class="f3" style="margin-bottom:10px">
+        <div><label>Date</label><input type="date" id="eDate" value="${(src&&src.report_date)||today()}"></div>
+        <div><label>Project</label><select id="eSite">${activeSites.map(s=>`<option value="${s.id}" ${src&&src.site_id===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
+        <div><label>Work</label><select id="eWork"></select></div>
+      </div>
+      <div class="checkline" style="margin-bottom:16px">
+        <input type="checkbox" id="eHol" ${src&&src.is_holiday?"checked":""}><label for="eHol" style="margin:0;text-transform:none;font-size:14px;color:var(--text)">Sunday / Public holiday (holiday rate ×${SET.holiday_multiplier})</label>
+      </div>
+      <fieldset data-kind="mp"><legend>Manpower — standard day ${SET.std_hours} hrs, OT ×${SET.ot_multiplier}</legend>
+        <div class="seg" id="mpSeg">
+          <button type="button" data-m="trade" class="${MPMODE==="trade"?"on":""}">By trade (count)</button>
+          <button type="button" data-m="worker" class="${MPMODE==="worker"?"on":""}">By worker name</button>
+        </div>
+        <div class="rowset">${mpRows}</div>
+        <button type="button" class="addrow" style="margin-top:8px">+ Add ${MPMODE==="worker"?"worker":"trade"}</button>
+        ${MPMODE==="worker"?`<button type="button" class="addrow" id="mpAll" style="margin-top:6px">+ Add all workers posted to this project</button>
+          ${WORKERS.length?"":`<p class="hint">No workers in the register yet — add them under the Workers tab.</p>`}`:""}
+      </fieldset>
+      <fieldset data-kind="mat"><legend>Materials used / received</legend>
+        <div class="rowset">${((src&&src.materials)||[]).map(m=>simpleRow("mat",m)).join("")}</div>
+        <button type="button" class="addrow" style="margin-top:8px">+ Add material</button></fieldset>
+      <fieldset data-kind="eq"><legend>Equipment</legend>
+        <div class="rowset">${((src&&src.equipment)||[]).map(m=>simpleRow("eq",m)).join("")}</div>
+        <button type="button" class="addrow" style="margin-top:8px">+ Add equipment</button></fieldset>
+      <fieldset><legend>Site photos</legend>
+        <label class="filedrop" for="ePhoto">Tap to add photos — camera or gallery<input id="ePhoto" type="file" accept="image/*" multiple></label>
+        <div class="photos" id="ePhotos"></div>
+        <p class="hint">Photos are resized to about 1400 px before upload so they are quick to send on site data.</p>
+      </fieldset>
+      <div style="margin-bottom:16px"><label>Progress / remarks</label>
+        <textarea id="eNote" rows="3" placeholder="Work done today, delays, safety observations…">${esc((src&&src.progress_note)||"")}</textarea></div>
+      <button class="btn" id="eSave" style="width:100%">${editing?"Save changes":"Submit report"}</button>
+      ${editing?`<button class="btn sec" id="eCancel" style="width:100%;margin-top:8px">Cancel</button>`:""}
+      <div id="eMsg"></div>
+    </div>`;
+
+  const fillWorks=()=>{
+    const ws=WORKS.filter(w=>w.site_id===$("eSite").value&&w.status!=="completed");
+    $("eWork").innerHTML=`<option value="">General</option>`+ws.map(w=>`<option value="${w.id}" ${src&&src.work_item_id===w.id?"selected":""}>${esc(w.name)}</option>`).join("");
+  };
+  $("eSite").onchange=()=>{ fillWorks(); saveDraft(); };
+  if(activeSites.length) fillWorks();
+  const autoHol=()=>{ const d=new Date($("eDate").value+"T00:00:00"); if(d.getDay()===0) $("eHol").checked=true; };
+  $("eDate").onchange=()=>{ autoHol(); saveDraft(); };
+  if(!src) autoHol();
+  $("main").querySelectorAll("fieldset").forEach(wireRowset);
+  $("main").addEventListener("input",saveDraft);
+  if($("dDiscard")) $("dDiscard").onclick=()=>{ clearDraft(); openTab("entry"); };
+  if($("eCancel")) $("eCancel").onclick=()=>openTab(ME.role==="admin"?"reports":"mine");
+
+  /* manpower mode switch — keeps hours, drops rows that cannot be mapped */
+  $("mpSeg").querySelectorAll("button").forEach(btn=>btn.onclick=()=>{
+    if(btn.dataset.m===MPMODE) return;
+    if(btn.dataset.m==="worker" && !WORKERS.length){ alert("Add workers to the register first (Workers tab)."); return; }
+    const cur=collectForm();
+    MPMODE=btn.dataset.m;
+    const keepRows = MPMODE==="worker" ? "" : (cur.manpower||[]).map(m=>mpRow({trade:m.trade,count:m.count||1,norm_hours:m.norm_hours,ot_hours:m.ot_hours})).join("");
+    const fs=$("main").querySelector('fieldset[data-kind="mp"]');
+    fs.querySelector(".rowset").innerHTML = keepRows || (MPMODE==="worker"?wkRow():mpRow());
+    fs.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x.dataset.m===MPMODE));
+    const addBtns=fs.querySelectorAll(".addrow");
+    addBtns[0].textContent = "+ Add "+(MPMODE==="worker"?"worker":"trade");
+    wireRowset(fs); wireAllBtn(); saveDraft();
+  });
+  function wireAllBtn(){
+    const all=$("mpAll"); if(!all) return;
+    all.onclick=()=>{
+      const sid=$("eSite").value;
+      const mine=WORKERS.filter(w=>w.active&&w.site_id===sid);
+      if(!mine.length) return alert("No workers are posted to this project yet. Set their project under the Workers tab.");
+      const have=new Set([...$("main").querySelectorAll('[data-kind="wk"] .c1')].map(x=>x.value));
+      const fs=$("main").querySelector('fieldset[data-kind="mp"]');
+      mine.filter(w=>!have.has(w.id)).forEach(w=>fs.querySelector(".rowset").insertAdjacentHTML("beforeend",wkRow({worker_id:w.id})));
+      [...fs.querySelectorAll('[data-kind="wk"] .c1')].forEach((selEl,i)=>{ /* keep selections */ });
+      wireX(fs); saveDraft();
+    };
+  }
+  wireAllBtn();
+
+  /* photos */
+  async function renderPhotos(){
+    let signed={};
+    if(KEEP.length){
+      const {data}=await sb.storage.from(PHOTO_BUCKET).createSignedUrls(KEEP.map(k=>k.path),3600);
+      (data||[]).forEach(d=>{ if(d.signedUrl) signed[d.path]=d.signedUrl; });
+    }
+    $("ePhotos").innerHTML =
+      KEEP.map((k,i)=>`<div class="thumb"><img src="${signed[k.path]||""}" alt=""><button type="button" data-rmk="${i}">×</button></div>`).join("")+
+      PHOTOS.map((p,i)=>`<div class="thumb"><img src="${p.url}" alt=""><button type="button" data-rmp="${i}">×</button></div>`).join("");
+    $("ePhotos").querySelectorAll("[data-rmk]").forEach(b=>b.onclick=()=>{ KEEP.splice(+b.dataset.rmk,1); renderPhotos(); });
+    $("ePhotos").querySelectorAll("[data-rmp]").forEach(b=>b.onclick=()=>{ URL.revokeObjectURL(PHOTOS[+b.dataset.rmp].url); PHOTOS.splice(+b.dataset.rmp,1); renderPhotos(); });
+  }
+  $("ePhoto").onchange=async e=>{
+    const files=[...e.target.files]; e.target.value="";
+    for(const f of files){
+      if(KEEP.length+PHOTOS.length>=10){ alert("Maximum 10 photos per report."); break; }
+      const blob=await shrink(f);
+      PHOTOS.push({name:f.name,blob,url:URL.createObjectURL(blob)});
+    }
+    renderPhotos();
+  };
+  renderPhotos();
+
+  /* save */
+  $("eSave").onclick=async()=>{
+    if(!$("eSite").value){ $("eMsg").innerHTML=`<div class="msg err">No active projects — add one first.</div>`; return; }
+    const f=collectForm();
+    if(!f.manpower.length){ $("eMsg").innerHTML=`<div class="msg err">${MPMODE==="worker"?"Select at least one worker.":"Add at least one manpower row (choose a trade and number of men)."}</div>`; return; }
+    const payload={
+      report_date:f.report_date, site_id:f.site_id, work_item_id:f.work_item_id,
+      supervisor_id: editing?editing.supervisor_id:ME.id, is_holiday:f.is_holiday,
+      manpower:f.manpower, materials:f.materials, equipment:f.equipment, progress_note:f.progress_note
+    };
+    if(editing && editing.status==="rejected") payload.status="submitted";
+    $("eSave").disabled=true; $("eMsg").innerHTML=`<div class="msg ok">Saving…</div>`;
+
+    if(!navigator.onLine && !editing){
+      const skipped=await queueReport(payload,PHOTOS);
+      $("eSave").disabled=false; clearDraft();
+      $("eMsg").innerHTML=`<div class="msg ok">No signal — report saved on this device and will be sent automatically when you are back online.${skipped?` ${skipped} photo(s) could not be held offline.`:""}</div>`;
+      PHOTOS=[]; setTimeout(()=>openTab("entry"),1800); return;
+    }
+    let res;
+    try{ res=await pushReport(payload,PHOTOS,KEEP,editing?editing.id:null); }
+    catch(e){ res={error:{message:String(e.message||e)}}; }
+    $("eSave").disabled=false;
+    if(res.error){
+      if(!editing && /fetch|network|Failed/i.test(res.error.message)){
+        const skipped=await queueReport(payload,PHOTOS); clearDraft(); PHOTOS=[];
+        $("eMsg").innerHTML=`<div class="msg ok">Connection lost — report saved on this device and queued.${skipped?` ${skipped} photo(s) skipped.`:""}</div>`;
+        setTimeout(()=>openTab("entry"),1800); return;
+      }
+      $("eMsg").innerHTML=`<div class="msg err">${esc(res.error.message)}</div>`; return;
+    }
+    clearDraft();
+    if(editing){ $("eMsg").innerHTML=`<div class="msg ok">Report updated.</div>`; setTimeout(()=>openTab(ME.role==="admin"?"reports":"mine"),900); return; }
+    $("eMsg").innerHTML=`<div class="msg ok">Report submitted for ${fmtD(payload.report_date)} — ${esc(siteName(payload.site_id))}. Pending office review.</div>`;
+    PHOTOS=[]; KEEP=[];
+    $("eNote").value="";
+    const fs=$("main").querySelector('fieldset[data-kind="mp"]');
+    fs.querySelector(".rowset").innerHTML = MPMODE==="worker"?wkRow():mpRow();
+    ["mat","eq"].forEach(k=>{ const f2=$("main").querySelector(`fieldset[data-kind="${k}"]`); f2.querySelector(".rowset").innerHTML=""; wireRowset(f2); });
+    wireRowset(fs); wireAllBtn(); renderPhotos();
+  };
+}
+
+/* ================= WORKERS REGISTER + ATTENDANCE ================= */
+async function vWorkers(){
+  const admin = ME.role==="admin";
+  const [dF,dT]=rangeDefaults();
+  $("main").innerHTML=`
+    <div class="grid" style="grid-template-columns:1fr;gap:18px">
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">Worker register</h2>
+        <div class="f3" style="margin-bottom:10px">
+          <div><label>Full name</label><input id="wName" placeholder="e.g. Rajesh Kumar"></div>
+          <div><label>Work permit / FIN / emp no.</label><input id="wEmp" placeholder="optional"></div>
+          <div><label>Trade</label><select id="wTrade">${TRADES.filter(t=>t.active).map(t=>`<option>${esc(t.name)}</option>`).join("")}</select></div>
+        </div>
+        <div class="f3" style="margin-bottom:10px">
+          <div><label>Posted to project</label><select id="wSite"><option value="">— none —</option>${SITES.filter(s=>s.active).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+          ${admin?`<div><label>Own rate (${esc(SET.currency)}/hr, blank = trade rate)</label><input type="number" step="any" min="0" id="wRate" placeholder="0"></div>`:""}
+          <div style="display:flex;align-items:end"><button class="btn" id="wAdd" style="width:100%">Add worker</button></div>
+        </div>
+        <div id="wMsg"></div>
+        <div class="tblwrap" style="margin-top:10px"><table class="tbl" id="wTbl"></table></div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">Attendance summary</h2>
+        <div class="flexbar">
+          <div><label>From</label><input type="date" id="aFrom" value="${dF}"></div>
+          <div><label>To</label><input type="date" id="aTo" value="${dT}"></div>
+          <div style="min-width:200px"><label>Project</label><select id="aSite"><option value="">All</option>${SITES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+          <button class="btn sm" id="aGo">Apply</button>
+          <button class="btn sec sm" id="aCsv">Export CSV</button>
+        </div>
+        <div id="aBody"></div>
+        <p class="hint">Only reports entered in “by worker name” mode appear here. Rejected reports are excluded.</p>
+      </div>
+    </div>`;
+
+  function wTable(){
+    $("wTbl").innerHTML=`
+      <tr><th>Name</th><th>WP / emp no.</th><th>Trade</th><th>Project</th><th style="text-align:right">Rate</th><th>Status</th>${admin?"<th></th>":""}</tr>
+      ${WORKERS.map(w=>`<tr>
+        <td>${esc(w.name)}</td><td class="mono">${esc(w.emp_no||"—")}</td><td>${esc(w.trade||"—")}</td>
+        <td>${esc(w.site_id?siteName(w.site_id):"—")}</td>
+        <td class="num">${+w.rate>0?money(w.rate):`<span class="muted">trade</span>`}</td>
+        <td><span class="pill ${w.active?"ongoing":"inactive"}">${w.active?"active":"inactive"}</span></td>
+        ${admin?`<td style="text-align:right;white-space:nowrap">
+          <button class="btn sec sm" data-wtog="${w.id}">${w.active?"Deactivate":"Activate"}</button>
+          <button class="btn danger sm" data-wdel="${w.id}">×</button></td>`:""}
+      </tr>`).join("")||`<tr><td colspan="7" class="muted">No workers yet.</td></tr>`}`;
+    if(!admin) return;
+    $("wTbl").querySelectorAll("[data-wtog]").forEach(b=>b.onclick=async()=>{
+      const w=workerById(b.dataset.wtog);
+      await sb.from("workers").update({active:!w.active}).eq("id",w.id); await loadBase(); wTable();
+    });
+    $("wTbl").querySelectorAll("[data-wdel]").forEach(b=>b.onclick=async()=>{
+      if(!confirm("Remove this worker from the register? Past reports keep his name."))return;
+      const {error}=await sb.from("workers").delete().eq("id",b.dataset.wdel);
+      if(error) $("wMsg").innerHTML=`<div class="msg err">${esc(error.message)}</div>`;
+      await loadBase(); wTable();
+    });
+  }
+  wTable();
+  $("wAdd").onclick=async()=>{
+    const name=$("wName").value.trim();
+    if(!name) return $("wMsg").innerHTML=`<div class="msg err">Enter the worker's name.</div>`;
+    const row={name, emp_no:$("wEmp").value.trim()||null, trade:$("wTrade").value, site_id:$("wSite").value||null};
+    if(admin) row.rate=+($("wRate").value||0)||0;
+    const {error}=await sb.from("workers").insert(row);
+    $("wMsg").innerHTML=error?`<div class="msg err">${esc(error.message)}</div>`:`<div class="msg ok">${esc(name)} added.</div>`;
+    if(!error){ $("wName").value=""; $("wEmp").value=""; if($("wRate")) $("wRate").value=""; await loadBase(); wTable(); }
+  };
+
+  let ATT=[];
+  async function att(){
+    const reps=await fetchReports($("aFrom").value,$("aTo").value,$("aSite").value||null,{costable:true});
+    const by={};
+    reps.forEach(r=>{
+      const dayM=r.is_holiday?+SET.holiday_multiplier:1, otEff=r.is_holiday?+SET.holiday_multiplier:+SET.ot_multiplier;
+      (r.manpower||[]).forEach(m=>{
+        if(!m.worker_id) return;
+        const w=workerById(m.worker_id);
+        const k=m.worker_id;
+        const o=(by[k]=by[k]||{name:m.worker_name||(w?w.name:"(removed)"),emp:(w&&w.emp_no)||"",trade:m.trade||(w?w.trade:""),days:0,norm:0,ot:0,cost:0,sites:new Set()});
+        const nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, rate=mpRate(m);
+        o.days++; o.norm+=nh; o.ot+=oh; o.cost+=rate*(nh*dayM+oh*otEff); o.sites.add(siteName(r.site_id));
+      });
+    });
+    ATT=Object.values(by).sort((a,b)=>b.norm+b.ot-(a.norm+a.ot));
+    const tot=ATT.reduce((a,o)=>({d:a.d+o.days,n:a.n+o.norm,o:a.o+o.ot,c:a.c+o.cost}),{d:0,n:0,o:0,c:0});
+    $("aBody").innerHTML=ATT.length?`
+      <div class="board">${[[ATT.length,"Workers on site"],[n1(tot.d),"Man-days"],[n1(tot.n+tot.o),"Man-hours"],[n1(tot.o),"OT hours"]]
+        .concat(ME.role==="admin"?[[money(tot.c),"Labour cost"]]:[])
+        .map(([v,l])=>`<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("")}</div>
+      <div class="tblwrap"><table class="tbl">
+        <tr><th>Worker</th><th>WP / emp no.</th><th>Trade</th><th>Projects</th><th style="text-align:right">Days</th><th style="text-align:right">Norm hrs</th><th style="text-align:right">OT hrs</th>${ME.role==="admin"?`<th style="text-align:right">Cost</th>`:""}</tr>
+        ${ATT.map(o=>`<tr><td>${esc(o.name)}</td><td class="mono">${esc(o.emp||"—")}</td><td>${esc(o.trade||"—")}</td>
+          <td style="font-size:12px">${esc([...o.sites].join(", "))}</td>
+          <td class="num">${o.days}</td><td class="num">${n1(o.norm)}</td><td class="num">${n1(o.ot)}</td>
+          ${ME.role==="admin"?`<td class="num">${money(o.cost)}</td>`:""}</tr>`).join("")}
+      </table></div>`
+      :`<p class="muted">No named-worker attendance in this range.</p>`;
+  }
+  $("aGo").onclick=att; await att();
+  $("aCsv").onclick=()=>{
+    const rows=[["Worker","WP/Emp no","Trade","Projects","Days","Norm hrs","OT hrs","Labour cost"]]
+      .concat(ATT.map(o=>[o.name,o.emp,o.trade,[...o.sites].join(" / "),o.days,o.norm,o.ot,o.cost.toFixed(2)]));
+    const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.download=`attendance_${$("aFrom").value}_to_${$("aTo").value}.csv`; a.click();
+  };
+}
+
+/* ================= SUPERVISOR: MY REPORTS ================= */
+async function vMine(){
+  const {data}=await sb.from("daily_reports").select("*").eq("supervisor_id",ME.id).order("report_date",{ascending:false}).limit(60);
+  const reps=data||[];
+  const rej=reps.filter(r=>r.status==="rejected");
+  $("main").innerHTML=`<h2 style="font-size:20px;margin-bottom:12px">My recent reports</h2>
+    ${rej.length?`<div class="msg err">${rej.length} report(s) were sent back by the office. Open them below, fix the entry and save — they go back for review automatically.</div>`:""}
+    <div id="mList">${reps.map(r=>repCard(r,false)).join("")||`<p class="muted">No reports yet — submit your first daily report.</p>`}</div>`;
+  wireRepActions($("mList"),()=>openTab("mine"),reps);
+}
+
+window.addEventListener("online", ()=>{ netStatus(); flushQueue(); });
+window.addEventListener("offline", netStatus);
+if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+init();
+</script>
+</body>
+</html>
