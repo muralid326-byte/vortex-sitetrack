@@ -10,131 +10,237 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SiteTrack">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
+/* ---------- Vortex SiteTrack — site log for a Singapore industrial contractor ----------
+   ink sidebar, paper workspace, one red hazard rule as the single loud element. */
 :root{
-  --bg:#FFFFFF; --panel:#FFFFFF; --panel2:#F5F7FA; --line:#E2E6EC;
-  --text:#1C2431; --muted:#6A7482; --red2:#D71920; --navy:#1C2431; --amber:#D71920;
-  --green:#1E8E4D; --red:#C7402D; --blue:#2563C4;
-  --radius:10px; --shadow:0 1px 3px rgba(22,53,94,.08);
-  --display:'Saira Condensed',sans-serif; --body:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace;
+  --ink:#0F141C; --steel:#1C2431; --red:#D71920;
+  --paper:#F4F6F9; --card:#FFFFFF; --line:#E3E7ED; --line2:#EFF2F6;
+  --text:#141A23; --muted:#6C7686; --muted2:#98A2B0;
+  --green:#0E7A45; --amber:#B26B00; --blue:#1F5FBF; --danger:#C0392B;
+  --r:12px; --r-sm:9px;
+  --sh:0 1px 2px rgba(15,20,28,.05), 0 1px 8px rgba(15,20,28,.04);
+  --sh-lift:0 4px 16px rgba(15,20,28,.09);
+  --body:Calibri,'Segoe UI',Arial,Helvetica,sans-serif; --display:var(--body);
+  --mono:Consolas,'Lucida Console',Menlo,monospace;
+  --side:236px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
-body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.5;min-height:100vh}
+body{background:var(--paper);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased}
+::selection{background:var(--steel);color:#fff}
 button{font-family:inherit;cursor:pointer}
-input,select,textarea{font-family:inherit;font-size:15px;background:#fff;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 11px;width:100%}
-input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
-label{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 5px;font-weight:500}
-h1,h2,h3{font-family:var(--display);letter-spacing:.03em;text-transform:uppercase;color:var(--navy)}
-.wrap{max-width:1180px;margin:0 auto;padding:0 16px 60px}
+a{color:var(--blue)}
+input,select,textarea{font-family:inherit;font-size:15px;background:#fff;border:1px solid var(--line);color:var(--text);border-radius:var(--r-sm);padding:10px 12px;width:100%;transition:border-color .12s,box-shadow .12s}
+input:hover,select:hover{border-color:#CBD3DD}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 3px rgba(28,36,49,.09)}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+input[type=number]{font-family:var(--mono)}
+label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 6px;font-weight:600}
+h1,h2,h3{font-family:var(--display);font-weight:700;color:var(--steel);line-height:1.25}
 .hidden{display:none!important}
 .mono{font-family:var(--mono)}
 .muted{color:var(--muted)}
-.btn{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:600;font-size:14px}
-.btn:hover{filter:brightness(1.15)}
-.btn.sec{background:#fff;color:var(--navy);border:1px solid var(--line)}
-.btn.sec:hover{border-color:var(--navy)}
-.btn.danger{background:#fff;color:var(--red);border:1px solid var(--red)}
-.btn.sm{padding:6px 12px;font-size:13px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
-.grid{display:grid;gap:14px}
-.msg{padding:10px 14px;border-radius:8px;font-size:14px;margin:12px 0}
-.msg.err{background:#FBEDEA;color:#96301F;border:1px solid #EFC5BC}
-.msg.ok{background:#EAF6EE;color:#166237;border:1px solid #BFE3CC}
-header{border-bottom:3px solid var(--amber);background:#fff;position:sticky;top:0;z-index:20;box-shadow:var(--shadow)}
-.hbar{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px}
-.logo{display:flex;align-items:center;gap:10px}
-.logo img{height:38px;width:auto;display:block}
-.logo .fallback{font-family:var(--display);font-size:22px;letter-spacing:.05em;color:var(--navy);font-weight:700}
-.logo .fallback span{color:var(--amber)}
-.logo .app{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);border-left:1px solid var(--line);padding-left:10px;text-transform:uppercase}
-.rolebadge{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);border-radius:99px;padding:2px 10px;color:var(--muted);text-transform:uppercase}
-.hbar .spacer{flex:1}
-.uname{font-size:13px;color:var(--muted)}
-nav.tabs{display:flex;gap:4px;max-width:1180px;margin:14px auto 20px;padding:0 16px;flex-wrap:wrap}
-nav.tabs button{background:#fff;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:8px 16px;font-size:14px;font-weight:500}
-nav.tabs button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
-.login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,#fff 0%,#F1F4F9 100%)}
-.login-card{width:100%;max-width:400px}
-.login-card .hazard{height:8px;border-radius:4px 4px 0 0;background:repeating-linear-gradient(45deg,var(--amber) 0 14px,var(--navy) 14px 28px)}
-.login-card .inner{background:#fff;border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:28px;box-shadow:var(--shadow)}
-.login-card .logo{justify-content:center;margin-bottom:8px}
-.login-card .sub{font-size:13px;color:var(--muted);margin-bottom:22px;text-align:center}
-.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-.stat{background:#fff;border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
-.stat .v{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1.1;color:var(--navy)}
-.stat .l{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.hint{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.5}
+
+/* ---------- buttons ---------- */
+.btn{background:var(--steel);color:#fff;border:1px solid var(--steel);border-radius:var(--r-sm);padding:11px 20px;font-weight:600;font-size:14px;letter-spacing:.01em;transition:transform .08s,box-shadow .12s,background .12s}
+.btn:hover{background:#28323F;box-shadow:var(--sh-lift)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.5;cursor:default;box-shadow:none}
+.btn.sec{background:#fff;color:var(--steel);border-color:var(--line)}
+.btn.sec:hover{background:#fff;border-color:var(--steel)}
+.btn.danger{background:#fff;color:var(--danger);border-color:#EBC7C1}
+.btn.danger:hover{background:#FDF3F1;border-color:var(--danger)}
+.btn.sm{padding:7px 13px;font-size:13px;border-radius:7px}
+
+/* ---------- app shell ---------- */
+#appView{display:flex;min-height:100vh}
+#side{width:var(--side);flex:none;background:#fff;color:var(--text);position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:30;
+  box-shadow:2px 0 18px rgba(15,20,28,.07);border-right:1px solid var(--line)}
+#side::after{content:"";position:absolute;top:0;right:-1px;bottom:0;width:3px;
+  background:repeating-linear-gradient(180deg,var(--red) 0 14px,transparent 14px 28px);opacity:.85}
+.brandbox{padding:20px 18px 16px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--line)}
+.brandbox img{height:38px;width:auto;align-self:flex-start}
+.brandbox .app{font-family:var(--display);font-size:12.5px;letter-spacing:.16em;color:var(--muted);font-weight:700;padding-left:2px}
+nav.tabs{display:flex;flex-direction:column;gap:2px;padding:14px 11px;overflow-y:auto;flex:1}
+nav.tabs button{background:transparent;border:none;color:var(--muted);border-radius:9px;padding:10px 12px;font-size:14px;font-weight:500;text-align:left;display:flex;align-items:center;gap:11px;transition:background .12s,color .12s}
+nav.tabs button:hover{background:var(--paper);color:var(--text)}
+nav.tabs button.on{background:var(--steel);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(28,36,49,.22)}
+nav.tabs button.on svg{color:var(--red)}
+#tabsNav svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.sidefoot{padding:14px 16px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.sidefoot .uname{font-size:13px;color:var(--text);font-weight:600;word-break:break-word}
+.rolebadge{font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:2px 10px;align-self:flex-start;text-transform:capitalize;background:var(--paper)}
+#content{margin-left:var(--side);flex:1;min-width:0}
+.topbar{display:none}
+.wrap{max-width:1060px;margin:0 auto;padding:30px 26px 80px}
+
+/* ---------- surfaces ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--sh)}
+.grid{display:grid;gap:16px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+fieldset{border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:18px;background:#fff;box-shadow:var(--sh)}
+legend{font-size:13px;color:var(--steel);padding:0 9px;font-weight:700}
+.msg{padding:12px 15px;border-radius:var(--r-sm);font-size:14px;margin:14px 0;line-height:1.5}
+.msg.err{background:#FDF2F0;color:#8E2C1D;border:1px solid #F2CFC8}
+.msg.ok{background:#EFF8F3;color:#0B5C34;border:1px solid #C6E7D6}
+.note{background:var(--paper);border-radius:var(--r-sm);padding:12px 14px;font-size:13.5px;margin-top:12px;border-left:3px solid var(--red)}
+.code{font-family:var(--mono);font-size:12px;background:var(--steel);color:#fff;padding:3px 8px;border-radius:5px;font-weight:600}
+
+/* ---------- numbers ---------- */
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:14px;margin-bottom:22px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--steel)}
+.stat:first-child::before{background:var(--red)}
+.stat .v{font-family:var(--mono);font-size:27px;font-weight:600;line-height:1.15;color:var(--steel);letter-spacing:-.02em}
+.stat .l{font-size:12.5px;color:var(--muted);margin-top:4px;font-weight:600}
+.kv{display:flex;gap:26px;flex-wrap:wrap;margin-top:12px}
+.kv div b{font-family:var(--mono);font-size:19px;display:block;color:var(--steel)}
+.kv div span{font-size:12.5px;color:var(--muted);font-weight:600}
+
+/* ---------- tables ---------- */
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tbl{width:100%;border-collapse:collapse;font-size:14px}
-.tbl th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:2px solid var(--line)}
-.tbl td{padding:9px 10px;border-bottom:1px solid #EDF0F4;vertical-align:top}
+.tbl th{font-size:12.5px;color:var(--muted);text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);font-weight:700;white-space:nowrap}
+.tbl td{padding:11px;border-bottom:1px solid var(--line2);vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
-.tbl .num{font-family:var(--mono);text-align:right}
-.tbl tfoot td{border-top:2px solid var(--line);font-weight:600;background:var(--panel2)}
-.tblwrap{overflow-x:auto}
-.pill{font-family:var(--mono);font-size:11px;border-radius:99px;padding:2px 9px;letter-spacing:.05em}
-.pill.ongoing{background:#E4EDFB;color:#1D4E9E}
-.pill.completed{background:#E4F5EA;color:#166237}
-.pill.on-hold{background:#FBF1DC;color:#8A6210}
-.pill.inactive{background:#F8E7E4;color:#96301F}
-.pill.hol{background:#FBF1DC;color:#8A6210}
-.rowset{display:grid;gap:8px}
-.rowline{display:grid;gap:8px;grid-template-columns:2fr 1fr 1fr 1fr auto;align-items:center}
+.tbl tbody tr:hover td{background:#FAFBFD}
+.tbl .num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.tbl tfoot td{border-top:1px solid var(--line);font-weight:600;background:var(--paper)}
+.tbl select{padding:6px 9px;font-size:13px;border-radius:7px}
+
+/* ---------- pills ---------- */
+.pill{font-size:11.5px;border-radius:99px;padding:3px 10px;font-weight:600;white-space:nowrap;text-transform:capitalize}
+.pill.ongoing,.pill.submitted{background:#E8F0FC;color:#17458E}
+.pill.completed,.pill.approved{background:#E7F5EE;color:#0B5C34}
+.pill.on-hold,.pill.hol,.pill.pending{background:#FCF3E1;color:#8A5200}
+.pill.inactive,.pill.rejected,.pill.high{background:#FBEAE7;color:#8E2C1D}
+.pill.low{background:#EEF1F5;color:#5B6675}
+
+/* ---------- entry rows ---------- */
+.rowset{display:grid;gap:9px}
+.rowline{display:grid;gap:9px;grid-template-columns:2fr .7fr .9fr .9fr .9fr auto;align-items:center}
+.rowline.wk{grid-template-columns:2.2fr .9fr .9fr .9fr auto}
 .rowline.r3{grid-template-columns:2fr 1fr 1fr auto}
-.rowline .x{background:#fff;border:1px solid var(--line);color:var(--muted);border-radius:8px;width:36px;height:38px;font-size:16px}
+.rowline .x{background:#fff;border:1px solid var(--line);color:var(--muted2);border-radius:8px;width:38px;height:40px;font-size:17px;line-height:1}
 .rowline .x:hover{color:var(--red);border-color:var(--red)}
-.addrow{background:#fff;border:1px dashed var(--line);color:var(--muted);border-radius:8px;padding:8px;font-size:13px;width:100%}
-.addrow:hover{color:var(--navy);border-color:var(--navy)}
-fieldset{border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:16px;background:#fff}
-legend{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);padding:0 8px;font-weight:600}
-.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.sitecard{border-left:4px solid var(--navy)}
-.sitecard h3{font-size:19px}
-.kv{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
-.kv div b{font-family:var(--mono);font-size:19px;display:block;color:var(--navy)}
-.kv div span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.note{background:var(--panel2);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px;border-left:3px solid var(--amber)}
-details.rep{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff;box-shadow:var(--shadow)}
-details.rep summary{padding:10px 14px;cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:14px;list-style:none}
-details.rep summary::-webkit-details-marker{display:none}
-details.rep .body{padding:0 14px 14px;font-size:14px}
-.flexbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:16px}
-.flexbar>div{min-width:130px}
-.pl-line{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #EDF0F4;font-size:14px}
-.pl-line b{font-family:var(--mono)}
-.pl-line.total{border-top:2px solid var(--line);border-bottom:none;font-weight:600;font-size:16px}
-.profit-pos{color:var(--green)} .profit-neg{color:var(--red)}
-.checkline{display:flex;align-items:center;gap:8px;font-size:14px}
-.checkline input{width:auto}
-.pill.submitted{background:#E4EDFB;color:#1D4E9E}
-.pill.approved{background:#E4F5EA;color:#166237}
-.pill.rejected{background:#F8E7E4;color:#96301F}
-.pill.pending{background:#FBF1DC;color:#8A6210}
-.offbar{position:fixed;left:0;right:0;bottom:0;background:#8A6210;color:#fff;font-size:13px;padding:9px 14px;text-align:center;z-index:60;font-weight:500}
-.offbar.sync{background:#1E8E4D}
-.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;margin-top:10px}
-.photos .thumb{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2)}
-.photos img{width:100%;height:92px;object-fit:cover;display:block}
-.photos .thumb button{position:absolute;top:4px;right:4px;background:rgba(28,36,49,.72);color:#fff;border:none;border-radius:6px;width:24px;height:24px;font-size:14px;line-height:1}
-.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:12px}
-.seg button{background:#fff;border:none;padding:8px 16px;font-size:13px;color:var(--muted)}
-.seg button.on{background:var(--navy);color:#fff;font-weight:600}
-.rowline.wk{grid-template-columns:2.2fr 1fr 1fr auto}
-.hint{font-size:12px;color:var(--muted);margin-top:6px}
-.revbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
-.filedrop{border:1px dashed var(--line);border-radius:8px;padding:14px;text-align:center;color:var(--muted);font-size:13px}
+.addrow{background:#fff;border:1px dashed #CBD3DD;color:var(--muted);border-radius:var(--r-sm);padding:10px;font-size:13px;width:100%;font-weight:500}
+.addrow:hover{color:var(--steel);border-color:var(--steel);background:#FAFBFD}
+.subnav{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.subnav button{background:#fff;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:7px 15px;font-size:13.5px;font-weight:500}
+.subnav button:hover{border-color:var(--steel);color:var(--steel)}
+.subnav button.on{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.chips button{background:#fff;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 14px;font-size:13px;font-weight:500}
+.chips button.on{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+.pill.to_start{background:#EEF1F5;color:#5B6675}
+.pill.ongoing2{background:#E8F0FC;color:#17458E}
+.stat.warn::before{background:var(--amber)}
+.stat.good::before{background:var(--green)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin-bottom:14px;background:#fff}
+.seg button{background:#fff;border:none;padding:9px 17px;font-size:13px;color:var(--muted);font-weight:500}
+.seg button.on{background:var(--steel);color:#fff;font-weight:600}
+.checkline{display:flex;align-items:center;gap:9px;font-size:14px}
+.checkline input{width:auto;accent-color:var(--steel)}
+.filedrop{display:block;border:1px dashed #CBD3DD;border-radius:var(--r-sm);padding:18px;text-align:center;color:var(--muted);font-size:13.5px;cursor:pointer;font-weight:500}
+.filedrop:hover{border-color:var(--steel);color:var(--steel);background:#FAFBFD}
 .filedrop input{display:none}
-@media(max-width:680px){
-  .rowline.wk{grid-template-columns:1.7fr .8fr .8fr auto}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin-top:12px}
+.photos .thumb{position:relative;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;background:var(--paper)}
+.photos img{width:100%;height:94px;object-fit:cover;display:block}
+.photos .thumb button{position:absolute;top:5px;right:5px;background:rgba(15,20,28,.7);color:#fff;border:none;border-radius:6px;width:25px;height:25px;font-size:14px;line-height:1}
+.costbar{display:flex;flex-wrap:wrap;gap:20px;align-items:baseline;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 16px;margin-top:12px}
+.costbar b{font-family:var(--mono);font-size:19px;color:var(--steel)}
+.costbar span{font-size:12.5px;color:var(--muted);font-weight:600;display:block}
+
+/* ---------- reports ---------- */
+details.rep{border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;background:#fff;box-shadow:var(--sh);overflow:hidden}
+details.rep summary{padding:14px 17px;cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:14px;list-style:none}
+details.rep summary::-webkit-details-marker{display:none}
+details.rep summary:hover{background:#FAFBFD}
+details.rep[open] summary{border-bottom:1px solid var(--line2);background:#FAFBFD}
+details.rep .body{padding:16px 17px 18px;font-size:14px}
+.revbar{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;align-items:center;padding-top:14px;border-top:1px solid var(--line2)}
+.flexbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:20px}
+.flexbar>div{min-width:135px}
+.pl-line{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--line2);font-size:14px}
+.pl-line b{font-family:var(--mono);white-space:nowrap}
+.pl-line.total{border-top:1px solid var(--line);border-bottom:none;font-weight:600;font-size:16.5px;margin-top:4px;padding-top:13px}
+.profit-pos{color:var(--green)} .profit-neg{color:var(--danger)}
+.sitecard h3{font-size:19px}
+
+/* ---------- to-do ---------- */
+.todo{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line2)}
+.todo:last-child{border-bottom:none}
+.todo input[type=checkbox]{width:19px;height:19px;margin-top:2px;flex:none;accent-color:var(--green)}
+.todo.done .tt{text-decoration:line-through;color:var(--muted)}
+.tt{font-size:14.5px;font-weight:500}
+.td-meta{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+/* ---------- login ---------- */
+.login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--ink);position:relative;overflow:hidden}
+.login-shell::before{content:"";position:absolute;inset:auto 0 0 0;height:6px;
+  background:repeating-linear-gradient(45deg,var(--red) 0 16px,var(--ink) 16px 32px)}
+.login-card{width:100%;max-width:404px;position:relative;z-index:1}
+.login-card .hazard{height:6px;border-radius:var(--r) var(--r) 0 0;background:repeating-linear-gradient(45deg,var(--red) 0 14px,var(--steel) 14px 28px)}
+.login-card .inner{background:#fff;border-radius:0 0 var(--r) var(--r);padding:34px 30px 30px;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.login-card .logo{display:flex;justify-content:center;margin-bottom:10px}
+.login-card .logo img{height:42px}
+.login-card .sub{font-size:13px;color:var(--muted);margin-bottom:26px;text-align:center}
+
+/* ---------- setup banner ---------- */
+#setupBar:not(:empty){max-width:1060px;margin:22px auto -8px;padding:0 26px}
+.setup{background:#FDF2F0;border:1px solid #F2CFC8;border-left:3px solid var(--red);border-radius:var(--r-sm);padding:14px 16px;font-size:14px;color:#8E2C1D;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.setup b{font-weight:600}
+pre.sql{background:var(--ink);color:#D9E1EC;font-family:var(--mono);font-size:11.5px;line-height:1.6;padding:16px;border-radius:var(--r-sm);overflow:auto;max-height:340px;white-space:pre;margin-top:12px}
+.offbar{position:fixed;left:0;right:0;bottom:0;background:var(--amber);color:#fff;font-size:13px;padding:11px 16px;text-align:center;z-index:60;font-weight:600}
+.offbar.sync{background:var(--green)}
+
+/* ---------- mobile: top bar + bottom app nav ---------- */
+@media(max-width:900px){
+  #side{position:static;width:auto;flex-direction:row;background:transparent}
+  #side::after{display:none}
+  #appView{display:block;padding-bottom:74px}
+  .brandbox,.sidefoot{display:none}
+  #content{margin-left:0}
+  .topbar{display:flex;align-items:center;gap:11px;background:#fff;padding:10px 15px;position:sticky;top:0;z-index:25;
+    box-shadow:0 2px 12px rgba(15,20,28,.08);
+    border-bottom:3px solid transparent;
+    border-image:repeating-linear-gradient(45deg,var(--red) 0 12px,#fff 12px 24px) 3}
+  .topbar img{height:30px}
+  .topbar .app{font-family:var(--display);font-size:12px;letter-spacing:.1em;color:var(--muted);font-weight:700}
+  .topbar .spacer{flex:1}
+  .topbar .uname{font-size:12px;color:var(--muted);max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar .btn{padding:5px 11px;font-size:12px}
+  nav.tabs{position:fixed;left:0;right:0;bottom:0;top:auto;flex-direction:row;gap:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    background:#fff;border-top:1px solid var(--line);overflow-x:auto;z-index:40;box-shadow:0 -2px 14px rgba(15,20,28,.07)}
+  nav.tabs button{flex:1 0 auto;flex-direction:column;gap:4px;min-width:70px;padding:7px 6px;font-size:10px;letter-spacing:.02em;
+    color:var(--muted);text-align:center;border-radius:8px;font-weight:600}
+  nav.tabs button span{white-space:nowrap;font-size:10px}
+  nav.tabs button:hover{background:transparent;color:var(--steel)}
+  nav.tabs button.on{background:transparent;color:var(--red)}
+  nav.tabs button.on svg{color:var(--red)}
+  #tabsNav svg{width:21px;height:21px}
+  .wrap{padding:18px 15px 40px}
+  #setupBar:not(:empty){padding:0 15px;margin:16px auto -4px}
+  .card,fieldset{padding:16px;border-radius:var(--r-sm)}
   .f2,.f3{grid-template-columns:1fr}
-  .rowline{grid-template-columns:1.6fr .8fr .8fr .8fr auto}
-  .rowline.r3{grid-template-columns:1.6fr 1fr 1fr auto}
+  .board{grid-template-columns:1fr 1fr;gap:10px}
+  .stat{padding:13px 14px}
   .stat .v{font-size:22px}
+  .rowline{grid-template-columns:1.5fr .6fr .7fr .7fr .7fr auto;gap:6px}
+  .rowline.wk{grid-template-columns:1.5fr .7fr .7fr .7fr auto;gap:6px}
+  .rowline.r3{grid-template-columns:1.6fr 1fr 1fr auto;gap:6px}
+  .rowline input,.rowline select{padding:9px 8px;font-size:14px}
+  .rowline .x{width:32px;height:38px}
+  .flexbar>div{min-width:118px;flex:1}
 }
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -166,18 +272,29 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 </div>
 
 <div id="appView" class="hidden">
-  <header><div class="hbar">
-    <div class="logo">
+  <aside id="side">
+    <div class="brandbox">
       <img class="brand" alt="Vortex Engineering">
       <span class="app">SiteTrack</span>
     </div>
-    <span class="rolebadge" id="roleBadge"></span>
-    <div class="spacer"></div>
-    <span class="uname" id="unameLbl"></span>
-    <button class="btn sec sm" id="btnLogout">Sign out</button>
-  </div></header>
-  <nav class="tabs" id="tabsNav"></nav>
-  <div class="wrap" id="main"></div>
+    <nav class="tabs" id="tabsNav"></nav>
+    <div class="sidefoot">
+      <div class="uname js-uname"></div>
+      <span class="rolebadge js-role"></span>
+      <button class="btn sec sm js-logout">Sign out</button>
+    </div>
+  </aside>
+  <div id="content">
+    <header class="topbar">
+      <img class="brand" alt="Vortex Engineering">
+      <span class="app">SiteTrack</span>
+      <div class="spacer"></div>
+      <span class="uname js-uname"></span>
+      <button class="btn sec sm js-logout">Sign out</button>
+    </header>
+    <div id="setupBar"></div>
+    <div class="wrap" id="main"></div>
+  </div>
 </div>
 
 <script>
@@ -191,6 +308,27 @@ const sb2 = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, 
 const COST_CATS=["Manpower","Material","Equipment","Resources","Overhead","Subcontractor","Transport","Other"];
 let ME=null, SITES=[], WORKS=[], PROFILES=[], TRADES=[], WORKERS=[], SET={std_hours:8,ot_multiplier:1.5,holiday_multiplier:2,currency:"SGD"};
 const PHOTO_BUCKET="dpr-photos";
+/* What a supervisor is allowed to see. Admin edits this under Access. */
+const PERM_DEFAULT={costs:false,rates:false,entry:true,mine:true,resources:true,todo:true,workers:true,addproj:true,attendance:true,photos:true};
+const SUP_GROUPS=[
+  ["entry","New report",[["entry","New daily report"]]],
+  ["mine","My reports",[["mine","My reports"]]],
+  ["resources","Resources",[["resources","Resources"]]],
+  ["records","Add records",[["records","Add records"]]],
+  ["workers","Workers",[["workers","Workers"]]],
+  ["sites","Projects",[["sites","Projects"]]],
+  ["todo","To-do",[["todo","To-do"]]]
+];
+const SUP_TABS=SUP_GROUPS.map(g=>[g[0],g[1]]);
+/* role default first, then this person's own overrides */
+function perms(who){
+  const u = who || ME || {};
+  const role=(SET.perms&&SET.perms.supervisor)||{};
+  return Object.assign({},PERM_DEFAULT,role,(u.perms||{}));
+}
+/* admin always sees everything */
+const can = k => ME.role==="admin" ? true : !!perms()[k];
+const seeCost = () => can("costs");
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const today = () => new Date().toLocaleDateString("en-CA");
@@ -222,7 +360,7 @@ $("btnFirstAdmin").onclick = async ()=>{
   if(error) return liMsg(error.message);
   liMsg("Account created. Now run the 'make me admin' SQL line from the setup guide, then sign in.", true);
 };
-$("btnLogout").onclick = ()=> sb.auth.signOut();
+document.querySelectorAll(".js-logout").forEach(b=>b.onclick=()=>sb.auth.signOut());
 
 async function enter(){
   const {data:{user}} = await sb.auth.getUser();
@@ -230,11 +368,12 @@ async function enter(){
   if(error||!prof){ liMsg("Profile not found — check database setup."); return; }
   if(!prof.active){ await sb.auth.signOut(); liMsg("This account has been deactivated."); return; }
   ME=prof;
-  $("roleBadge").textContent = prof.role;
-  $("unameLbl").textContent = prof.full_name || user.email;
+  const setTxt=(cls,t)=>document.querySelectorAll("."+cls).forEach(e=>e.textContent=t);
+  setTxt("js-role", prof.role);
+  setTxt("js-uname", prof.full_name || user.email);
   buildTabs(); show("appView");
-  await openTab(ME.role==="admin"?"dash":"entry");
-  netStatus(); flushQueue();
+  await openTab(ME.role==="admin"?"dash":supGroups()[0][2][0][0]);
+  netStatus(); flushQueue(); schemaCheck();
 }
 
 /* ---------- shared data ---------- */
@@ -251,6 +390,9 @@ async function loadBase(){
   if(ME.role==="admin"){ const p=await sb.from("profiles").select("*").order("full_name"); PROFILES=p.data||[]; }
 }
 const siteName = id => (SITES.find(s=>s.id===id)||{}).name||"—";
+const siteCode = id => (SITES.find(s=>s.id===id)||{}).code||"";
+const siteLabel = s => (s.code?s.code+" — ":"")+s.name;
+const siteTag = id => { const c=siteCode(id); return c?`<span class="code">${esc(c)}</span> `:""; };
 const workName = id => (WORKS.find(w=>w.id===id)||{}).name||"General";
 const profName = id => (PROFILES.find(p=>p.id===id)||{}).full_name||"";
 const tradeRate = name => { const t=TRADES.find(x=>x.name===name); return t?+t.rate:0; };
@@ -263,16 +405,17 @@ function mpRate(m){
 
 /* labour cost of one report using rates + OT/holiday rules */
 function repCalc(r){
-  let men=0, normH=0, otH=0, cost=0;
+  let men=0, normH=0, otH=0, premH=0, cost=0;
   const holM=+SET.holiday_multiplier, otM=+SET.ot_multiplier;
   (r.manpower||[]).forEach(m=>{
-    const c=+m.count||0, nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, rate=mpRate(m);
-    men+=c; normH+=c*nh; otH+=c*oh;
+    const c=+m.count||0, nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, ph=+m.prem_hours||0, rate=mpRate(m);
+    men+=c; normH+=c*nh; otH+=c*oh; premH+=c*ph;
+    /* Sunday / public holiday: the whole day is charged at the premium rate */
     const dayM = r.is_holiday? holM : 1;
     const otEff = r.is_holiday? holM : otM;
-    cost += c*rate*(nh*dayM + oh*otEff);
+    cost += c*rate*(nh*dayM + oh*otEff + ph*holM);
   });
-  return {men, normH, otH, hrs:normH+otH, cost};
+  return {men, normH, otH, premH, hrs:normH+otH+premH, cost};
 }
 async function fetchReports(from,to,siteId,opts){
   opts=opts||{};
@@ -290,18 +433,77 @@ async function fetchReports(from,to,siteId,opts){
 function rangeDefaults(){ const t=new Date(); const f=new Date(t); f.setDate(t.getDate()-6); return [f.toLocaleDateString("en-CA"), today()]; }
 
 /* ---------- tabs ---------- */
-const TABS_ADMIN=[["dash","Dashboard"],["pl","P&L"],["reports","All reports"],["entry","New report"],["sites","Projects"],["workers","Workers"],["rates","Rates & settings"],["import","Import / Export"],["team","Supervisor IDs"]];
-const TABS_SUP=[["entry","New daily report"],["mine","My reports"],["workers","Workers"],["addproj","Add project"]];
+/* one button per group; the group opens on its first page and shows a strip of the rest */
+/* one tab per page, as before */
+const GROUPS=[
+  ["dash","Dashboard",[["dash","Dashboard"]]],
+  ["entry","New report",[["entry","New report"]]],
+  ["reports","All reports",[["reports","All reports"]]],
+  ["mine","My reports",[["mine","My reports"]]],
+  ["resources","Resources",[["resources","Resources"]]],
+  ["records","Add records",[["records","Add records"]]],
+  ["workers","Workers",[["workers","Workers"]]],
+  ["sites","Projects",[["sites","Projects"]]],
+  ["todo","To-do",[["todo","To-do"]]],
+  ["pl","P&L",[["pl","P&L"]]],
+  ["po","Purchase orders",[["po","Purchase orders"]]],
+  ["rates","Rates & settings",[["rates","Rates & settings"]]],
+  ["import","Import / Export",[["import","Import / Export"]]],
+  ["team","Supervisor IDs",[["team","Supervisor IDs"]]],
+  ["access","Access",[["access","Access"]]],
+  ["setup","Database setup",[["setup","Database setup"]]]
+];
+const TABS_ADMIN=GROUPS.filter(g=>g[0]!=="mine").map(g=>[g[0],g[1]]);
+function groupOf(k){ return GROUPS.find(g=>g[2].some(x=>x[0]===k)); }
+const TABS_SUP=[];  /* built from permissions at sign-in — see supTabs() */
+const ICO={
+  dash:'<path d="M3 12h6V3H3zM15 21h6v-9h-6zM3 21h6v-5H3zM15 8h6V3h-6z"/>',
+  pl:'<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>',
+  resources:'<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/>',
+  reports:'<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h7M9 17h5"/>',
+  entry:'<path d="M12 5v14M5 12h14"/>',
+  sites:'<path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/>',
+  workers:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
+  todo:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
+  access:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  setup:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  rates:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/>',
+  po:'<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/>',
+  import:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/>',
+  team:'<path d="M15 3h6v6M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  mine:'<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 16l2 2 4-4"/>',
+  addproj:'<path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M12 11v6M9 14h6"/>',
+  records:'<path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/><path d="M13 13h4M15 11v4"/>'
+};
+function supGroups(){
+  const p=perms();
+  const gs=SUP_GROUPS.map(g=>[g[0],g[1],g[2].filter(([k])=>p[k]!==false && !(k==="sites"&&p.addproj===false))])
+                     .filter(g=>g[2].length && p[g[0]]!==false);
+  return gs.length?gs:[["entry","New report",[["entry","New daily report"]]]];
+}
+function supTabs(){ return supGroups().map(g=>[g[0],g[1]]); }
+function myGroups(){ return ME.role==="admin"?GROUPS:supGroups(); }
 function buildTabs(){
-  const tabs = ME.role==="admin"?TABS_ADMIN:TABS_SUP;
-  $("tabsNav").innerHTML = tabs.map(([k,l])=>`<button data-t="${k}">${l}</button>`).join("");
+  const tabs = ME.role==="admin"?TABS_ADMIN:supTabs();
+  $("tabsNav").innerHTML = tabs.map(([k,l])=>`<button data-t="${k}"><svg viewBox="0 0 24 24">${ICO[k]||""}</svg><span>${l}</span></button>`).join("");
   $("tabsNav").querySelectorAll("button").forEach(b=> b.onclick=()=>openTab(b.dataset.t));
 }
 async function openTab(k,arg){
-  $("tabsNav").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===k));
+  const gs=myGroups();
+  if(ME.role!=="admin"){
+    const allowed=new Set(gs.flatMap(g=>g[2].map(x=>x[0])).concat(["setup"]));
+    if(!allowed.has(k)) k=gs[0][2][0][0];
+  }
+  const grp=gs.find(g=>g[2].some(x=>x[0]===k));
+  $("tabsNav").querySelectorAll("button").forEach(b=>b.classList.toggle("on",!!grp&&b.dataset.t===grp[0]));
   $("main").innerHTML=`<p class="muted">Loading…</p>`;
   await loadBase();
-  ({dash:vDash,pl:vPL,reports:vReports,entry:vEntry,sites:vSites,workers:vWorkers,rates:vRates,team:vTeam,mine:vMine,addproj:vAddProj,import:vImport}[k])(arg);
+  await ({dash:vDash,pl:vPL,reports:vReports,resources:vResources,entry:vEntry,sites:vSites,workers:vWorkers,todo:vTodo,access:vAccess,setup:vSetup,rates:vRates,team:vTeam,mine:vMine,addproj:vSites,import:vImport,po:vPO,records:vRecords}[k])(arg);
+  if(grp && grp[2].length>1){
+    $("main").insertAdjacentHTML("afterbegin",
+      `<div class="subnav">${grp[2].map(([sk,sl])=>`<button data-sub="${sk}" class="${sk===k?"on":""}">${sl}</button>`).join("")}</div>`);
+    $("main").querySelectorAll("[data-sub]").forEach(b=>b.onclick=()=>openTab(b.dataset.sub));
+  }
 }
 
 /* ================= DASHBOARD ================= */
@@ -315,14 +517,24 @@ async function vDash(){
       <button class="btn sec sm" id="dCsv">Export CSV</button>
     </div>
     <div class="board" id="dBoard"></div>
-    <h2 style="font-size:20px;margin:6px 0 12px">By project</h2>
+    <div id="dAttention"></div>
+    <h2 style="font-size:19px;margin:22px 0 12px">By project</h2>
+    <div class="chips" id="dChips"></div>
     <div class="grid" id="dSites"></div>`;
   $("dGo").onclick=render; $("dCsv").onclick=()=>exportCsv($("dFrom").value,$("dTo").value);
+  let filter="active";
   await render();
+
   async function render(){
     const reps=await fetchReports($("dFrom").value,$("dTo").value,null,{costable:true});
+    const [{data:tds},{data:pend}] = await Promise.all([
+      sb.from("todos").select("*").eq("status","open"),
+      sb.from("daily_reports").select("id,site_id,report_date,supervisor_id").eq("status","submitted")
+    ]);
+    const todos=tds||[], pending=pend||[];
     let tNorm=0,tOt=0,tCost=0; const by={};
     const menToday=reps.filter(r=>r.report_date===today()).reduce((a,r)=>a+repCalc(r).men,0);
+    const sitesToday=new Set(reps.filter(r=>r.report_date===today()).map(r=>r.site_id));
     reps.forEach(r=>{
       const c=repCalc(r); tNorm+=c.normH; tOt+=c.otH; tCost+=c.cost;
       const b=(by[r.site_id]=by[r.site_id]||{normH:0,otH:0,cost:0,reps:[],mats:{},last:null});
@@ -330,48 +542,73 @@ async function vDash(){
       if(!b.last||r.report_date>b.last) b.last=r.report_date;
       (r.materials||[]).forEach(m=>{const k=`${m.name} (${m.unit||"nos"})`; b.mats[k]=(b.mats[k]||0)+(+m.qty||0);});
     });
+    const st=x=>x.status||(x.active?"ongoing":"completed");
+    const counts={ongoing:SITES.filter(x=>st(x)==="ongoing").length,
+                  to_start:SITES.filter(x=>st(x)==="to_start").length,
+                  completed:SITES.filter(x=>st(x)==="completed").length};
+    const overdue=todos.filter(t=>t.due_date&&t.due_date<today()).length;
+    const lateWorks=WORKS.filter(w=>w.status!=="completed"&&w.expected_end&&w.expected_end<today()).length;
+    const unbilled=SITES.filter(x=>st(x)==="completed"&&!x.invoice_submitted).length;
+
     $("dBoard").innerHTML =
-      stat(menToday,"Men on site today")+stat(n1(tNorm+tOt),"Man-hours in range")+
-      stat(n1(tOt),"OT hours")+stat(reps.length,"Reports filed")+
-      (ME.role==="admin"?stat(money(tCost),"Labour cost (range)"):"");
-    $("dSites").innerHTML = SITES.filter(s=>s.active||by[s.id]).map(s=>{
-      const d=by[s.id];
-      if(!d) return `<div class="card sitecard"><h3>${esc(s.name)}</h3><div class="muted" style="font-size:13px">${esc(s.client_name||"")}</div><p class="muted" style="margin-top:8px">No reports in this range.</p></div>`;
+      stat(SITES.length,"Total projects")+
+      stat(counts.ongoing,"Ongoing")+
+      stat(n1(tNorm+tOt),"Total man-hours")+
+      stat(menToday+" / "+sitesToday.size,"Men on site today / sites")+
+      stat(pending.length,"Reports awaiting approval",pending.length?"warn":"good")+
+      stat(todos.length,"Pending activities",overdue?"warn":"")+
+      stat(reps.length,"Reports filed")+
+      (seeCost()?stat(money(tCost),"Labour cost (range)"):stat(n1(tOt),"OT hours"));
+
+    const alerts=[];
+    if(pending.length) alerts.push([`${pending.length} report(s) waiting for you to approve or reject`,"reports"]);
+    if(overdue) alerts.push([`${overdue} pending activity item(s) past their target date`,"todo"]);
+    if(lateWorks) alerts.push([`${lateWorks} work(s) past the expected completion date`,"sites"]);
+    if(unbilled) alerts.push([`${unbilled} completed project(s) with no invoice submitted`,"sites"]);
+    const noRate=WORKERS.filter(w=>!w.trade).length;
+    if(noRate) alerts.push([`${noRate} worker(s) with no designation — their hours cost nothing`,"workers"]);
+    $("dAttention").innerHTML = alerts.length?`<div class="card" style="margin-top:4px;border-left:3px solid var(--amber)">
+      <h3 style="font-size:16px;margin-bottom:10px">Needs attention</h3>
+      ${alerts.map(([t,k])=>`<div class="todo"><div style="flex:1"><div class="tt">${t}</div></div>
+        <button class="btn sec sm" data-goto="${k}">Open</button></div>`).join("")}</div>`:"";
+    $("dAttention").querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>openTab(b.dataset.goto));
+
+    $("dChips").innerHTML=[["active","Ongoing ("+counts.ongoing+")"],["to_start","Yet to start ("+counts.to_start+")"],
+      ["completed","Completed ("+counts.completed+")"],["all","All ("+SITES.length+")"]]
+      .map(([k,l])=>`<button data-f="${k}" class="${filter===k?"on":""}">${l}</button>`).join("");
+    $("dChips").querySelectorAll("[data-f]").forEach(bt=>bt.onclick=()=>{ filter=bt.dataset.f; render(); });
+
+    const want=x=>filter==="all"||(filter==="active"?st(x)==="ongoing":st(x)===filter);
+    $("dSites").innerHTML = SITES.filter(want).map(x=>{
+      const d=by[x.id], state=st(x);
+      const lbl={to_start:"Yet to start",ongoing:"Ongoing",completed:"Completed"}[state];
+      const head=`${x.code?`<span class="code">${esc(x.code)}</span> `:""}<span class="pill ${state==="ongoing"?"ongoing2":state}">${lbl}</span>`;
+      if(!d) return `<div class="card sitecard">${head}<h3 style="margin-top:8px">${esc(x.name)}</h3>
+        <div class="muted" style="font-size:13px">${esc(x.client_name||"")}</div>
+        ${state==="completed"?closeoutLine(x):`<p class="muted" style="margin-top:8px">No reports in this range.</p>`}</div>`;
       const latest=d.reps.find(r=>(r.progress_note||"").trim());
       const mats=Object.entries(d.mats).slice(0,6).map(([k,v])=>`${esc(k)}: <span class="mono">${n1(v)}</span>`).join(" · ");
-      return `<div class="card sitecard">
-        <h3>${esc(s.name)}</h3><div class="muted" style="font-size:13px">${esc(s.client_name||"")} · last report ${fmtD(d.last)}</div>
+      return `<div class="card sitecard">${head}
+        <h3 style="margin-top:8px">${esc(x.name)}</h3>
+        <div class="muted" style="font-size:13px">${esc(x.client_name||"")} · last report ${fmtD(d.last)}</div>
         <div class="kv">
           <div><b>${n1(d.normH+d.otH)}</b><span>man-hours</span></div>
           <div><b>${n1(d.otH)}</b><span>OT hours</span></div>
           <div><b>${d.reps.length}</b><span>reports</span></div>
-          ${ME.role==="admin"?`<div><b>${money(d.cost)}</b><span>labour cost</span></div>`:""}
+          ${seeCost()?`<div><b>${money(d.cost)}</b><span>labour cost</span></div>`:""}
         </div>
-        ${mats?`<div class="note" style="border-left-color:var(--blue)"><b style="font-size:11px;letter-spacing:.06em">MATERIALS</b><br>${mats}</div>`:""}
-        ${latest?`<div class="note"><b style="font-size:11px;letter-spacing:.06em">LATEST PROGRESS · ${fmtD(latest.report_date)}</b><br>${esc(latest.progress_note)}</div>`:""}
+        ${state==="completed"?closeoutLine(x):""}
+        ${mats?`<div class="note" style="border-left-color:var(--blue)"><b style="font-size:12px">Materials</b><br>${mats}</div>`:""}
+        ${latest?`<div class="note"><b style="font-size:12px">Latest progress · ${fmtD(latest.report_date)}</b><br>${esc(latest.progress_note)}</div>`:""}
       </div>`;
-    }).join("") || `<p class="muted">No projects yet.</p>`;
+    }).join("") || `<p class="muted">No projects in this view.</p>`;
   }
-  function stat(v,l){ return `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`; }
+  function stat(v,l,cls){ return `<div class="stat ${cls||""}"><div class="v">${v}</div><div class="l">${l}</div></div>`; }
 }
-async function exportCsv(from,to){
-  const reps=await fetchReports(from,to,null,{costable:true});
-  const rows=[["Date","Day type","Status","Site","Work","Supervisor","Worker name","Trade","Men","Norm hrs each","OT hrs each","Man-hrs","Labour cost","Materials","Equipment","Progress note"]];
-  reps.forEach(r=>{
-    const mats=(r.materials||[]).map(m=>`${m.name} ${m.qty}${m.unit||""}`).join("; ");
-    const eqp=(r.equipment||[]).map(e=>`${e.name} x${e.qty}${e.hours?` (${e.hours}h)`:""}`).join("; ");
-    const mp=(r.manpower&&r.manpower.length)?r.manpower:[{}];
-    mp.forEach((m,i)=>{
-      const c=+m.count||0, nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, rate=mpRate(m);
-      const dayM=r.is_holiday?+SET.holiday_multiplier:1, otEff=r.is_holiday?+SET.holiday_multiplier:+SET.ot_multiplier;
-      rows.push([r.report_date, r.is_holiday?"Holiday/Sun":"Normal", r.status||"submitted", siteName(r.site_id), workName(r.work_item_id), profName(r.supervisor_id),
-        m.worker_name||"", m.trade||"", c||"", nh||"", oh||"", c*(nh+oh)||"", (c*rate*(nh*dayM+oh*otEff)).toFixed(2),
-        i?"":mats, i?"":eqp, i?"":(r.progress_note||"").replace(/\n/g," ")]);
-    });
-  });
-  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
-  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download=`sitetrack_${from}_to_${to}.csv`; a.click();
+function closeoutLine(x){
+  const y=(ok,l,d)=>`<span class="pill ${ok?"approved":"pending"}">${l}: ${ok?(d?fmtD(d):"yes"):"not yet"}</span>`;
+  return `<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px">
+    ${y(x.jcc_submitted,"JCC",x.jcc_date)}${y(x.invoice_submitted,"Invoice",x.invoice_date)}</div>`;
 }
 
 /* ================= ADMIN: P&L ================= */
@@ -379,7 +616,7 @@ async function vPL(){
   $("main").innerHTML=`
     <div class="flexbar">
       <div style="min-width:240px"><label>Project</label>
-        <select id="pSite">${SITES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+        <select id="pSite">${SITES.map(s=>`<option value="${s.id}">${esc(siteLabel(s))}</option>`).join("")}</select></div>
       <button class="btn sm" id="pGo">Load</button>
       <div class="checkline" style="min-width:auto"><input type="checkbox" id="pAppr"><label for="pAppr" style="margin:0;text-transform:none;font-size:13px;color:var(--text)">Approved reports only</label></div>
     </div>
@@ -546,7 +783,7 @@ async function vReports(){
     <div class="flexbar">
       <div><label>From</label><input type="date" id="rFrom" value="${dF}"></div>
       <div><label>To</label><input type="date" id="rTo" value="${dT}"></div>
-      <div><label>Site</label><select id="rSite"><option value="">All</option>${SITES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+      <div><label>Site</label><select id="rSite"><option value="">All</option>${SITES.map(s=>`<option value="${s.id}">${esc(siteLabel(s))}</option>`).join("")}</select></div>
       <div><label>Status</label><select id="rStat"><option value="">All</option><option value="submitted">Pending review</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
       <button class="btn sm" id="rGo">Apply</button>
     </div><div id="rCount" class="muted" style="font-size:13px;margin-bottom:10px"></div><div id="rList"></div>`;
@@ -562,30 +799,38 @@ async function vReports(){
 function repCard(r,adminView){
   const c=repCalc(r);
   const st=r.status||"submitted";
-  const stLbl={submitted:"PENDING",approved:"APPROVED",rejected:"REJECTED"}[st];
+  const stLbl={submitted:"Pending review",approved:"Approved",rejected:"Rejected"}[st];
   const named=(r.manpower||[]).some(m=>m.worker_id||m.worker_name);
   const mpRows=(r.manpower||[]).map(m=>{
-    const nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, cnt=+m.count||0;
-    return `<tr>${named?`<td>${esc(m.worker_name||"—")}</td>`:""}<td>${esc(m.trade)}</td><td class="num">${cnt}</td><td class="num">${nh}</td><td class="num">${oh}</td><td class="num">${n1(cnt*(nh+oh))}</td></tr>`;
+    const nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, ph=+m.prem_hours||0, cnt=+m.count||0;
+    return `<tr>${named?`<td>${m.emp_no?`<span class="mono">${esc(m.emp_no)}</span> `:""}${esc(m.worker_name||"—")}</td>`:""}<td>${esc(m.trade)}</td><td class="num">${cnt}</td><td class="num">${nh}</td><td class="num">${oh}</td><td class="num">${ph||""}</td><td class="num">${n1(cnt*(nh+oh+ph))}</td></tr>`;
   }).join("");
   const matRows=(r.materials||[]).map(m=>`<tr><td>${esc(m.name)}</td><td class="num">${m.qty}</td><td>${esc(m.unit||"")}</td></tr>`).join("");
   const eqRows=(r.equipment||[]).map(e=>`<tr><td>${esc(e.name)}</td><td class="num">${e.qty}</td><td class="num">${e.hours||""}</td></tr>`).join("");
   return `<details class="rep"><summary>
       <span class="mono">${fmtD(r.report_date)}</span>
       <span class="pill ${st}">${stLbl}</span>
-      ${r.is_holiday?`<span class="pill hol">HOL/SUN</span>`:""}
+      ${r.is_holiday?`<span class="pill hol">Sunday / PH</span>`:""}
       <b>${esc(siteName(r.site_id))}</b>
       <span class="muted">${esc(workName(r.work_item_id))}</span>
       ${adminView?`<span class="muted">· ${esc(profName(r.supervisor_id))}</span>`:""}
-      <span style="margin-left:auto" class="mono">${c.men} men · ${n1(c.hrs)} hrs${(adminView&&ME.role==="admin")?` · ${money(c.cost)}`:""}</span>
+      <span style="margin-left:auto" class="mono">${c.men} men · ${n1(c.hrs)} hrs${seeCost()?` · ${money(c.cost)}`:""}</span>
     </summary><div class="body">
-      ${mpRows?`<div class="tblwrap"><table class="tbl"><tr>${named?"<th>Worker</th>":""}<th>Trade</th><th style="text-align:right">Men</th><th style="text-align:right">Norm hrs</th><th style="text-align:right">OT hrs</th><th style="text-align:right">Man-hrs</th></tr>${mpRows}</table></div>`:""}
+      ${mpRows?`<div class="tblwrap"><table class="tbl"><tr>${named?"<th>Worker</th>":""}<th>Designation</th><th style="text-align:right">Men</th><th style="text-align:right">Norm</th><th style="text-align:right">OT 1.5</th><th style="text-align:right">Prem 2.0</th><th style="text-align:right">Man-hrs</th></tr>${mpRows}</table></div>`:""}
       ${matRows?`<h3 style="font-size:14px;margin:12px 0 4px">Materials</h3><div class="tblwrap"><table class="tbl"><tr><th>Material</th><th style="text-align:right">Qty</th><th>Unit</th></tr>${matRows}</table></div>`:""}
       ${eqRows?`<h3 style="font-size:14px;margin:12px 0 4px">Equipment</h3><div class="tblwrap"><table class="tbl"><tr><th>Equipment</th><th style="text-align:right">Qty</th><th style="text-align:right">Hours</th></tr>${eqRows}</table></div>`:""}
+      ${(()=>{ const m=r.meta||{}; const bits=[];
+        if(m.start_time&&m.end_time) bits.push(["Time on site",`${m.start_time} – ${m.end_time}${m.break_hours?` (less ${m.break_hours} hr break)`:""}`]);
+        if(m.driver) bits.push(["Lorry driver",m.driver+(m.transport_note?` · ${m.transport_note}`:"")]);
+        if(m.work_status) bits.push(["Stage",{to_start:"To be started",ongoing:"In progress",completed:"Completed"}[m.work_status]||m.work_status]);
+        if(m.progress_pct!=null) bits.push(["Progress",m.progress_pct+"%"]);
+        if(m.expected_end) bits.push(["Expected completion",fmtD(m.expected_end)]);
+        return bits.length?`<div class="tblwrap" style="margin-top:10px"><table class="tbl">${bits.map(([k,v])=>`<tr><td style="color:var(--muted);width:170px">${k}</td><td>${esc(String(v))}</td></tr>`).join("")}</table></div>`:"";
+      })()}
       ${r.progress_note?`<div class="note">${esc(r.progress_note)}</div>`:""}
       ${(r.photos||[]).length?`<h3 style="font-size:14px;margin:12px 0 0">Site photos (${(r.photos||[]).length})</h3><div class="photos" data-ph="${r.id}"><span class="muted" style="font-size:12px">Loading…</span></div>`:""}
       ${r.review_note?`<div class="note" style="border-left-color:${st==="rejected"?"var(--red)":"var(--green)"}"><b style="font-size:11px;letter-spacing:.06em">REVIEW NOTE</b><br>${esc(r.review_note)}</div>`:""}
-      ${(r.reviewed_at&&adminView)?`<p class="hint">${stLbl.toLowerCase()} by ${esc(profName(r.reviewed_by)||"admin")} on ${fmtD(String(r.reviewed_at).slice(0,10))}</p>`:""}
+      ${(r.reviewed_at&&adminView)?`<p class="hint">${stLbl.replace(" review","")} by ${esc(profName(r.reviewed_by)||"admin")} on ${fmtD(String(r.reviewed_at).slice(0,10))}</p>`:""}
       <div class="revbar">
         ${(ME.role==="admin")?`
           ${st!=="approved"?`<button class="btn sm" data-appr="${r.id}">Approve</button>`:""}
@@ -641,50 +886,289 @@ async function hydratePhotos(root,reps){
   });
 }
 
+/* ================= SHARED EXCEL IMPORTER ================= */
+/* One workbook, up to three sheets: Manpower, Materials, Equipment.
+   forcedSiteId, when given, overrides the Project column on every row. */
+function xlDate(v){
+  if(v==null||v==="") return null;
+  if(typeof v==="number"){ const d=XLSX.SSF.parse_date_code(v); if(!d)return null;
+    return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`; }
+  const t=String(v).trim();
+  let m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if(m) return `${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`;
+  m=t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+  if(m){ const y=m[3].length===2?"20"+m[3]:m[3]; return `${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`; }
+  return null;
+}
+const cellOf=(row,key)=>{ const k=Object.keys(row).find(x=>x.toLowerCase().trim().startsWith(key)); return k?row[k]:""; };
+
+function buildTemplate(){
+  const wb=XLSX.utils.book_new();
+  const mp=[["Date","Project","Work","Trade","Men","Normal Hours","OT Hours","Prem Hours","Holiday (Y/N)","Remarks"],
+    ["01/07/2026","PCS Ayer Merbau","Flare Shelter","General Labourer",6,8,2,0,"N","Blasting & priming"],
+    ["01/07/2026","PCS Ayer Merbau","Flare Shelter","Supervisor",1,8,2,0,"N",""]];
+  const mt=[["Date","Project","Work","Material","Qty","Unit","Remarks"],
+    ["01/07/2026","PCS Ayer Merbau","Flare Shelter","Jotun primer",12,"L","DO 44821"]];
+  const eq=[["Date","Project","Work","Equipment","Qty","Hours","Remarks"],
+    ["01/07/2026","PCS Ayer Merbau","Flare Shelter","Scissor lift",1,8,"On hire"]];
+  const add=(rows,name,widths)=>{ const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"]=widths.map(w=>({wch:w})); XLSX.utils.book_append_sheet(wb,ws,name); };
+  add(mp,"Manpower",[12,26,22,22,6,13,10,11,13,30]);
+  add(mt,"Materials",[12,26,22,26,8,10,26]);
+  add(eq,"Equipment",[12,26,22,26,8,9,26]);
+  add([["Valid trades (exact spelling)"],...TRADES.filter(t=>t.active).map(t=>[t.name])],"Trades",[30]);
+  add([["Projects already in SiteTrack"],...SITES.map(x=>[siteLabel(x)])],"Projects",[52]);
+  XLSX.writeFile(wb,"SiteTrack_Import_Template.xlsx");
+}
+
+async function importWorkbook(buffer, forcedSiteId){
+  const wb=XLSX.read(buffer);
+  const sheet=n=>{ const key=wb.SheetNames.find(x=>x.toLowerCase()===n); return key?XLSX.utils.sheet_to_json(wb.Sheets[key],{defval:""}):[]; };
+  let mpRows=sheet("manpower");
+  /* a single unnamed sheet is treated as manpower, as the old template was */
+  if(!mpRows.length && !sheet("materials").length && !sheet("equipment").length)
+    mpRows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""});
+  const mtRows=sheet("materials"), eqRows=sheet("equipment");
+  if(!mpRows.length && !mtRows.length && !eqRows.length) throw new Error("No data rows found in Manpower, Materials or Equipment.");
+
+  const forcedName = forcedSiteId ? siteName(forcedSiteId) : "";
+  const errs=[]; const items=[];
+  const push=(kind,rows)=>rows.forEach((r,i)=>{
+    const date=xlDate(cellOf(r,"date"));
+    const proj=forcedName||String(cellOf(r,"project")).trim();
+    const name=String(cellOf(r,kind==="mp"?"trade":kind==="mt"?"material":"equip")).trim();
+    if(!date||!proj||!name){ if(String(cellOf(r,"project"))||name) errs.push(`${kind} row ${i+2}`); return; }
+    items.push({kind,date,proj,work:String(cellOf(r,"work")).trim(),name,
+      qty:+cellOf(r,kind==="mp"?"men":"qty")||0,
+      nh:+cellOf(r,"normal")||+SET.std_hours, oh:+cellOf(r,"ot")||0, ph:+cellOf(r,"prem")||0,
+      unit:String(cellOf(r,"unit")).trim(), hours:+cellOf(r,"hours")||0,
+      hol:/^y/i.test(String(cellOf(r,"holiday")).trim()), rem:String(cellOf(r,"remarks")).trim()});
+  });
+  push("mp",mpRows); push("mt",mtRows); push("eq",eqRows);
+  if(!items.length) throw new Error("No valid rows. Check that Date, Project and the item column are filled.");
+
+  /* create any project, work or trade the sheet mentions but the app does not have */
+  for(const pn of [...new Set(items.map(x=>x.proj))]){
+    if(!SITES.find(x=>x.name.toLowerCase()===pn.toLowerCase())){
+      const {data,error}=await sb.from("sites").insert({name:pn}).select().single();
+      if(error) throw error; SITES.push(data);
+    }
+  }
+  for(const it of items){
+    if(!it.work) continue;
+    const site=SITES.find(x=>x.name.toLowerCase()===it.proj.toLowerCase());
+    if(!WORKS.find(w=>w.site_id===site.id&&w.name.toLowerCase()===it.work.toLowerCase())){
+      const {data,error}=await sb.from("work_items").insert({site_id:site.id,name:it.work}).select().single();
+      if(error) throw error; WORKS.push(data);
+    }
+  }
+  for(const tn of [...new Set(items.filter(x=>x.kind==="mp").map(x=>x.name))]){
+    if(!TRADES.find(t=>t.name.toLowerCase()===tn.toLowerCase())){
+      const {data,error}=await sb.from("trades").insert({name:tn}).select().single();
+      if(error) throw error; TRADES.push(data);
+    }
+  }
+  /* one daily report per date + project + work + holiday flag */
+  const groups={};
+  items.forEach(it=>{
+    const site=SITES.find(x=>x.name.toLowerCase()===it.proj.toLowerCase());
+    const work=it.work?WORKS.find(w=>w.site_id===site.id&&w.name.toLowerCase()===it.work.toLowerCase()):null;
+    const key=[it.date,site.id,work?work.id:"",it.hol].join("|");
+    const g=(groups[key]=groups[key]||{report_date:it.date,site_id:site.id,work_item_id:work?work.id:null,
+      supervisor_id:ME.id,is_holiday:it.hol,status:"approved",reviewed_by:ME.id,reviewed_at:new Date().toISOString(),
+      manpower:[],materials:[],equipment:[],progress_note:""});
+    if(it.kind==="mp"){ const t=TRADES.find(x=>x.name.toLowerCase()===it.name.toLowerCase());
+      g.manpower.push({trade:t.name,count:it.qty,norm_hours:it.nh,ot_hours:it.oh,prem_hours:it.ph}); }
+    else if(it.kind==="mt") g.materials.push({name:it.name,qty:it.qty,unit:it.unit});
+    else g.equipment.push({name:it.name,qty:it.qty,hours:it.hours});
+    if(it.rem) g.progress_note = g.progress_note ? g.progress_note+"; "+it.rem : it.rem;
+  });
+  const payloads=Object.values(groups).filter(g=>g.manpower.length||g.materials.length||g.equipment.length);
+  for(let i=0;i<payloads.length;i+=50){
+    const {error}=await sb.from("daily_reports").insert(payloads.slice(i,i+50));
+    if(error) throw error;
+  }
+  const n=k=>items.filter(x=>x.kind===k).length;
+  return `Imported ${n("mp")} manpower, ${n("mt")} material and ${n("eq")} equipment row(s) as ${payloads.length} dated record(s)`
+    + (forcedName?` on ${esc(forcedName)}`:` across ${[...new Set(items.map(x=>x.proj))].length} project(s)`)
+    + `.${errs.length?` ${errs.length} row(s) skipped for missing Date, Project or name.`:""}`;
+}
+
+/* ================= ADD RECORDS TO AN EXISTING PROJECT ================= */
+async function vRecords(){
+  $("main").innerHTML=`
+    <h2 style="font-size:22px;margin-bottom:6px">Add records to an existing project</h2>
+    <p class="muted" style="margin-bottom:18px;font-size:14px">For manpower, materials or equipment already spent — a past day, or a delivery that never went through a daily report. Type it in below, or bring a whole Excel sheet in at the bottom. Either way it books against the project you choose and shows up in that project's resources${seeCost()?" and P&L":""}.</p>
+    <div class="card" style="margin-bottom:18px">
+      <div class="f3" style="margin-bottom:10px">
+        <div><label>Project</label><select id="qSite">${SITES.map(x=>`<option value="${x.id}">${esc(siteLabel(x))}</option>`).join("")}</select></div>
+        <div><label>Date</label><input type="date" id="qDate" value="${today()}"></div>
+        <div><label>Work (optional)</label><select id="qWork"></select></div>
+      </div>
+      <div class="seg" id="qSeg">
+        <button type="button" data-q="mp" class="on">Manpower</button>
+        <button type="button" data-q="mat">Materials</button>
+        <button type="button" data-q="eq">Equipment</button>
+      </div>
+      <div id="qRows"></div>
+      <button type="button" class="addrow" id="qAdd" style="margin-top:8px">+ Add line</button>
+      <div style="margin-top:12px"><label>Remarks</label><input id="qNote" placeholder="e.g. backdated from site diary, DO 44821"></div>
+      <button class="btn" id="qSave" style="margin-top:12px">Save to project</button>
+      <div id="qMsg"></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:17px;margin-bottom:6px">Or bring in an Excel sheet</h3>
+      <p class="muted" style="font-size:13.5px;margin-bottom:14px">Manpower, materials and equipment can all come from one workbook — one sheet each, named Manpower, Materials and Equipment. Every row lands on the project chosen above, whatever the Project column says.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn sec sm" id="qTpl">Download the template</button>
+      </div>
+      <input type="file" id="qFile" accept=".xlsx,.xls,.csv" style="margin-bottom:12px">
+      <button class="btn" id="qImp">Import into this project</button>
+      <div id="qImsg"></div>
+    </div>`;
+  /* ---- quick records ---- */
+  let QMODE="mp";
+  const qFill=()=>{ const ws=WORKS.filter(w=>w.site_id===$("qSite").value);
+    $("qWork").innerHTML=`<option value="">General</option>`+ws.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join(""); };
+  $("qSite").onchange=qFill; qFill();
+  const qRow=()=>QMODE==="mp"?mpRow():simpleRow(QMODE);
+  const qPaint=()=>{ $("qRows").innerHTML=`<div class="rowset">${qRow()}</div>`;
+    $("qRows").querySelectorAll(".x").forEach(x=>x.onclick=()=>x.parentElement.remove()); };
+  qPaint();
+  $("qSeg").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{
+    QMODE=b.dataset.q; $("qSeg").querySelectorAll("[data-q]").forEach(x=>x.classList.toggle("on",x.dataset.q===QMODE)); qPaint(); });
+  $("qAdd").onclick=()=>{ $("qRows").querySelector(".rowset").insertAdjacentHTML("beforeend",qRow());
+    $("qRows").querySelectorAll(".x").forEach(x=>x.onclick=()=>x.parentElement.remove()); };
+  $("qSave").onclick=async()=>{
+    const rd=sel=>[...$("qRows").querySelectorAll(sel)];
+    const mp=rd('[data-kind="mp"]').map(r=>({trade:r.querySelector(".c1").value,count:+r.querySelector(".c2").value||0,
+      norm_hours:+r.querySelector(".c3").value||0,ot_hours:+r.querySelector(".c4").value||0,prem_hours:+r.querySelector(".c5").value||0}))
+      .filter(m=>m.trade&&m.count>0);
+    const gen=k=>rd(`[data-kind="${k}"]`).map(r=>({a:r.querySelector(".c1").value.trim(),b:+r.querySelector(".c2").value||0,c:r.querySelector(".c3").value}))
+      .filter(x=>x.a);
+    const mats=gen("mat").map(x=>({name:x.a,qty:x.b,unit:x.c}));
+    const eqp=gen("eq").map(x=>({name:x.a,qty:x.b,hours:+x.c||0}));
+    if(!mp.length&&!mats.length&&!eqp.length){ $("qMsg").innerHTML=`<div class="msg err">Fill at least one line.</div>`; return; }
+    const {error}=await sb.from("daily_reports").insert({
+      report_date:$("qDate").value, site_id:$("qSite").value, work_item_id:$("qWork").value||null,
+      supervisor_id:ME.id, is_holiday:new Date($("qDate").value+"T00:00:00").getDay()===0,
+      manpower:mp, materials:mats, equipment:eqp,
+      progress_note:$("qNote").value.trim()||"Added as a past record",
+      status:"approved", reviewed_by:ME.id, reviewed_at:new Date().toISOString()});
+    if(error){ $("qMsg").innerHTML=`<div class="msg err">${esc(error.message)}</div>`; return; }
+    $("qMsg").innerHTML=`<div class="msg ok">Saved to ${esc(siteName($("qSite").value))} on ${fmtD($("qDate").value)}. It now counts in that project's resources${seeCost()?" and P&L":""}.</div>`;
+    $("qNote").value=""; qPaint();
+  };
+
+  $("qTpl").onclick=()=>buildTemplate();
+  $("qImp").onclick=async()=>{
+    const f=$("qFile").files[0];
+    if(!f){ $("qImsg").innerHTML=`<div class="msg err">Choose the filled file first.</div>`; return; }
+    $("qImsg").innerHTML=`<div class="msg ok">Reading…</div>`;
+    try{
+      const res=await importWorkbook(await f.arrayBuffer(), $("qSite").value);
+      $("qImsg").innerHTML=`<div class="msg ok">${res}</div>`;
+      await loadBase();
+    }catch(e){ $("qImsg").innerHTML=`<div class="msg err">${esc(e.message||e)}</div>`; }
+  };
+}
+
 /* ================= PROJECTS (admin full) ================= */
 async function vSites(){
   $("main").innerHTML=`
     <div class="card" style="margin-bottom:16px">
       <h2 style="font-size:18px;margin-bottom:12px">Add project</h2>
       <div class="f3">
+        <div><label>Project code</label><input id="sCode" placeholder="e.g. PCS-24-07" style="text-transform:uppercase"></div>
         <div><label>Project / site name</label><input id="sName" placeholder="e.g. PCS Ayer Merbau"></div>
         <div><label>Client</label><input id="sClient" placeholder="e.g. PCS Pte Ltd"></div>
+        <div><label>Status</label><select id="sStatus"><option value="to_start">Yet to start</option><option value="ongoing" selected>Ongoing</option><option value="completed">Completed</option></select></div>
         <div style="align-self:end"><button class="btn" id="sAdd" style="width:100%">Add project</button></div>
       </div><div id="sMsg"></div>
     </div>
+    <div class="chips" id="sChips"></div>
     <div class="grid" id="sList"></div>`;
+
   $("sAdd").onclick=async()=>{
     const name=$("sName").value.trim(); if(!name)return;
-    const {error}=await sb.from("sites").insert({name,client_name:$("sClient").value.trim()});
+    const {error}=await sb.from("sites").insert({name,code:$("sCode").value.trim().toUpperCase()||null,
+      client_name:$("sClient").value.trim(), status:$("sStatus")?$("sStatus").value:"ongoing"});
     $("sMsg").innerHTML=error?`<div class="msg err">${esc(error.message)}</div>`:"";
     if(!error) openTab("sites");
   };
-  $("sList").innerHTML = SITES.map(s=>{
+  let SFILT="active";
+  const stOf=x=>x.status||(x.active?"ongoing":"completed");
+  const paintChips=()=>{
+    const c=k=>SITES.filter(x=>stOf(x)===k).length;
+    $("sChips").innerHTML=[["active","Ongoing ("+c("ongoing")+")"],["to_start","Yet to start ("+c("to_start")+")"],
+      ["completed","Completed ("+c("completed")+")"],["all","All ("+SITES.length+")"]]
+      .map(([k,l])=>`<button data-f="${k}" class="${SFILT===k?"on":""}">${l}</button>`).join("");
+    $("sChips").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ SFILT=b.dataset.f; paintList(); paintChips(); });
+  };
+  paintChips();
+  function paintList(){
+  $("sList").innerHTML = SITES.filter(x=>SFILT==="all"||(SFILT==="active"?stOf(x)==="ongoing":stOf(x)===SFILT)).map(s=>{
     const works=WORKS.filter(w=>w.site_id===s.id);
+    const state=stOf(s);
     return `<div class="card">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        ${s.code?`<span class="code">${esc(s.code)}</span>`:""}
         <h3 style="font-size:19px">${esc(s.name)}</h3>
         <span class="muted" style="font-size:13px">${esc(s.client_name||"")}</span>
-        <span class="pill ${s.active?"ongoing":"inactive"}">${s.active?"active":"inactive"}</span>
-        <button class="btn sec sm" style="margin-left:auto" data-tog="${s.id}">${s.active?"Deactivate":"Reactivate"}</button>
+        <span class="pill ${state==="ongoing"?"ongoing2":state}">${{to_start:"Yet to start",ongoing:"Ongoing",completed:"Completed"}[state]}</span>
+        <select data-sst="${s.id}" style="width:auto;padding:5px 10px;font-size:13px;margin-left:auto">
+          ${[["to_start","Yet to start"],["ongoing","Ongoing"],["completed","Completed"]]
+            .map(([v,l])=>`<option value="${v}" ${v===state?"selected":""}>${l}</option>`).join("")}
+        </select>
         <button class="btn danger sm" data-sdel="${s.id}">Delete</button>
       </div>
+      ${state==="completed"?`<div class="note" style="border-left-color:var(--green)">
+        <b style="font-size:13px">Close-out</b>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px">
+          <div class="checkline"><input type="checkbox" data-jcc="${s.id}" ${s.jcc_submitted?"checked":""}>
+            <label for="" style="margin:0;font-size:13.5px;color:var(--text)">JCC submitted${s.jcc_date?` · ${fmtD(s.jcc_date)}`:""}</label></div>
+          <div class="checkline"><input type="checkbox" data-inv="${s.id}" ${s.invoice_submitted?"checked":""}>
+            <label for="" style="margin:0;font-size:13.5px;color:var(--text)">Invoice submitted${s.invoice_date?` · ${fmtD(s.invoice_date)}`:""}</label></div>
+        </div></div>`:""}
       <div class="tblwrap" style="margin-top:10px"><table class="tbl">
-        ${works.map(w=>`<tr><td>${esc(w.name)}</td><td><span class="pill ${w.status}">${w.status}</span></td>
+        <tr><th>Work</th><th>Started</th><th>Completed</th><th>Expected</th><th style="text-align:right">Progress</th><th style="text-align:right">Stage</th></tr>
+        ${works.map(w=>{
+          const lbl={to_start:"To be started",ongoing:"In progress",completed:"Completed","on-hold":"On hold"}[w.status]||w.status;
+          const late = w.status!=="completed" && w.expected_end && w.expected_end<today();
+          return `<tr><td>${esc(w.name)}</td>
+          <td class="mono">${w.start_date?fmtD(w.start_date):"—"}</td>
+          <td class="mono">${w.end_date?fmtD(w.end_date):"—"}</td>
+          <td class="mono" style="${late?"color:var(--danger);font-weight:600":""}">${w.expected_end?fmtD(w.expected_end)+(late?" (late)":""):"—"}</td>
+          <td class="num">${w.progress_pct!=null?w.progress_pct+"%":"—"}</td>
           <td style="text-align:right"><select data-ws="${w.id}" style="width:auto;padding:4px 8px;font-size:13px">
-            ${["ongoing","completed","on-hold"].map(st=>`<option ${st===w.status?"selected":""}>${st}</option>`).join("")}
-          </select></td></tr>`).join("")||`<tr><td class="muted">No works added yet.</td></tr>`}
+            ${[["to_start","To be started"],["ongoing","In progress"],["completed","Completed"],["on-hold","On hold"]]
+              .map(([v,l])=>`<option value="${v}" ${v===w.status?"selected":""}>${l}</option>`).join("")}
+          </select></td></tr>`;}).join("")||`<tr><td colspan="6" class="muted">No works added yet.</td></tr>`}
       </table></div>
       <div style="display:flex;gap:8px;margin-top:10px">
         <input placeholder="New work under this project" data-wi="${s.id}" style="flex:1">
         <button class="btn sec sm" data-wadd="${s.id}">Add work</button>
       </div>
     </div>`;
-  }).join("")||`<p class="muted">No projects yet.</p>`;
-  $("sList").querySelectorAll("[data-tog]").forEach(b=>b.onclick=async()=>{
-    const s=SITES.find(x=>x.id===b.dataset.tog);
-    await sb.from("sites").update({active:!s.active}).eq("id",s.id); openTab("sites");
+  }).join("")||`<p class="muted">No projects in this view.</p>`;
+  wireList();
+  }
+  paintList();
+  function wireList(){
+  $("sList").querySelectorAll("[data-sst]").forEach(sel=>sel.onchange=async()=>{
+    const up={status:sel.value, active:sel.value!=="completed"};
+    if(sel.value==="completed") up.completed_date=today();
+    const {error}=await sb.from("sites").update(up).eq("id",sel.dataset.sst);
+    if(error) alert(error.message+"  — run the database update on the Setup tab.");
+    await loadBase(); paintChips(); paintList();
   });
+  const flag=(attr,col,dcol)=>$("sList").querySelectorAll(`[${attr}]`).forEach(cb=>cb.onchange=async()=>{
+    const up={}; up[col]=cb.checked; up[dcol]=cb.checked?today():null;
+    const {error}=await sb.from("sites").update(up).eq("id",cb.getAttribute(attr));
+    if(error) alert(error.message);
+    await loadBase(); paintList();
+  });
+  flag("data-jcc","jcc_submitted","jcc_date");
+  flag("data-inv","invoice_submitted","invoice_date");
   $("sList").querySelectorAll("[data-sdel]").forEach(b=>b.onclick=async()=>{
     const s=SITES.find(x=>x.id===b.dataset.sdel);
     if(!confirm(`Delete project "${s.name}"?\n\nThis permanently removes the project AND all its daily reports, works and cost entries. This cannot be undone.`))return;
@@ -698,8 +1182,14 @@ async function vSites(){
     await sb.from("work_items").insert({site_id:b.dataset.wadd,name:inp.value.trim()}); openTab("sites");
   });
   $("sList").querySelectorAll("[data-ws]").forEach(sel=>sel.onchange=async()=>{
-    await sb.from("work_items").update({status:sel.value}).eq("id",sel.dataset.ws);
+    const up={status:sel.value};
+    const w=WORKS.find(x=>x.id===sel.dataset.ws);
+    if(sel.value==="completed" && w && !w.end_date) up.end_date=today();
+    if(sel.value!=="completed") up.end_date=null;
+    if(sel.value!=="to_start" && w && !w.start_date) up.start_date=today();
+    await sb.from("work_items").update(up).eq("id",sel.dataset.ws);
   });
+  }
 }
 
 /* ================= SUPERVISOR: ADD PROJECT ================= */
@@ -735,110 +1225,39 @@ async function vImport(){
     <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
       <div class="card">
         <h2 style="font-size:18px;margin-bottom:10px">1 — Download standard template</h2>
-        <p style="font-size:14px;margin-bottom:12px">Excel template for past manpower allocation. One row per trade per day. Fill it (or copy from your existing sheets) and upload it on the right — projects, works and reports are created automatically and flow straight into man-hours and P&amp;L.</p>
+        <p style="font-size:14px;margin-bottom:12px">One workbook covers all three: a <b>Manpower</b> sheet, a <b>Materials</b> sheet and an <b>Equipment</b> sheet. Fill whichever you need — projects, works and trades that do not exist yet are created for you, and everything flows straight into man-hours, resources and P&amp;L.</p>
         <button class="btn" id="xTpl">Download template (.xlsx)</button>
-        <div class="note" style="margin-top:14px"><b style="font-size:11px;letter-spacing:.06em">TEMPLATE COLUMNS</b><br>
-        Date (DD/MM/YYYY) · Project · Work (optional) · Trade · Men · Normal Hours · OT Hours · Holiday (Y/N) · Remarks</div>
+        <div class="note" style="margin-top:14px"><b style="font-size:13px">Sheet columns</b><br>
+        <b>Manpower</b> — Date · Project · Work · Trade · Men · Normal Hours · OT Hours · Prem Hours · Holiday (Y/N) · Remarks<br>
+        <b>Materials</b> — Date · Project · Work · Material · Qty · Unit · Remarks<br>
+        <b>Equipment</b> — Date · Project · Work · Equipment · Qty · Hours · Remarks</div>
       </div>
       <div class="card">
         <h2 style="font-size:18px;margin-bottom:10px">2 — Upload filled template</h2>
+        <div style="margin-bottom:12px">
+          <label>Put every row into</label>
+          <select id="xInto">
+            <option value="">Whatever the Project column says (creates it if new)</option>
+            ${SITES.map(x=>`<option value="${x.id}">${esc(siteLabel(x))}</option>`).join("")}
+          </select>
+          <p class="hint">Choose an existing project and the Project column is ignored, so the men and hours land on that project's P&amp;L. The Work column still creates the works underneath it.</p>
+        </div>
         <input type="file" id="xFile" accept=".xlsx,.xls,.csv" style="margin-bottom:12px">
         <button class="btn" id="xGo">Import</button>
         <div id="xMsg"></div>
       </div>
     </div>`;
 
-  $("xTpl").onclick=()=>{
-    const hdr=["Date","Project","Work","Trade","Men","Normal Hours","OT Hours","Holiday (Y/N)","Remarks"];
-    const eg=[["01/07/2026","PCS Ayer Merbau","Flare Shelter","General Worker",6,8,2,"N","Blasting & priming"],
-              ["01/07/2026","PCS Ayer Merbau","Flare Shelter","Welder",2,8,0,"N",""],
-              ["05/07/2026","Sembcorp Cogen","","Fitter",4,8,4,"Y","Sunday shutdown work"]];
-    const wb=XLSX.utils.book_new();
-    const ws=XLSX.utils.aoa_to_sheet([hdr,...eg]);
-    ws["!cols"]=hdr.map((h,i)=>({wch:[12,24,22,22,6,13,9,13,30][i]}));
-    XLSX.utils.book_append_sheet(wb,ws,"Manpower");
-    const tw=XLSX.utils.aoa_to_sheet([["Valid trades (exact spelling)"],...TRADES.filter(t=>t.active).map(t=>[t.name])]);
-    tw["!cols"]=[{wch:28}];
-    XLSX.utils.book_append_sheet(wb,tw,"Trades");
-    XLSX.writeFile(wb,"SiteTrack_Manpower_Template.xlsx");
-  };
-
-  function parseDate(v){
-    if(v==null||v==="") return null;
-    if(typeof v==="number"){ const d=XLSX.SSF.parse_date_code(v); if(!d)return null;
-      return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`; }
-    const s=String(v).trim();
-    let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if(m) return `${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`;
-    m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
-    if(m){ let y=m[3].length===2?"20"+m[3]:m[3]; return `${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`; }
-    return null;
-  }
+  $("xTpl").onclick=()=>buildTemplate();
 
   $("xGo").onclick=async()=>{
     const f=$("xFile").files[0];
     if(!f){ $("xMsg").innerHTML=`<div class="msg err">Choose the filled template file first.</div>`; return; }
     $("xMsg").innerHTML=`<div class="msg ok">Reading file…</div>`;
     try{
-      const wb=XLSX.read(await f.arrayBuffer());
-      const ws=wb.Sheets["Manpower"]||wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
-      if(!rows.length) throw new Error("No data rows found.");
-      const errs=[]; const parsed=[];
-      rows.forEach((r,i)=>{
-        const get=k=>{ const key=Object.keys(r).find(x=>x.toLowerCase().trim().startsWith(k)); return key?r[key]:""; };
-        const date=parseDate(get("date")); const proj=String(get("project")).trim();
-        const trade=String(get("trade")).trim(); const men=+get("men")||0;
-        if(!date||!proj||!trade||!men){ if(String(get("project"))||String(get("trade"))) errs.push(`Row ${i+2}: needs Date, Project, Trade and Men`); return; }
-        parsed.push({date,proj,work:String(get("work")).trim(),trade,men,
-          nh:+get("normal")||+SET.std_hours, oh:+get("ot")||0,
-          hol:/^y/i.test(String(get("holiday")).trim()), rem:String(get("remarks")).trim()});
-      });
-      if(!parsed.length) throw new Error("No valid rows. "+(errs[0]||""));
-      // ensure projects
-      const projNames=[...new Set(parsed.map(p=>p.proj))];
-      for(const pn of projNames){
-        if(!SITES.find(s=>s.name.toLowerCase()===pn.toLowerCase())){
-          const {data,error}=await sb.from("sites").insert({name:pn}).select().single();
-          if(error) throw error; SITES.push(data);
-        }
-      }
-      // ensure works
-      for(const p of parsed){
-        if(!p.work) continue;
-        const site=SITES.find(s=>s.name.toLowerCase()===p.proj.toLowerCase());
-        if(!WORKS.find(w=>w.site_id===site.id&&w.name.toLowerCase()===p.work.toLowerCase())){
-          const {data,error}=await sb.from("work_items").insert({site_id:site.id,name:p.work}).select().single();
-          if(error) throw error; WORKS.push(data);
-        }
-      }
-      // ensure trades
-      const tNames=[...new Set(parsed.map(p=>p.trade))];
-      for(const tn of tNames){
-        if(!TRADES.find(t=>t.name.toLowerCase()===tn.toLowerCase())){
-          const {data,error}=await sb.from("trades").insert({name:tn}).select().single();
-          if(error) throw error; TRADES.push(data);
-        }
-      }
-      // group into reports: date + project + work + holiday
-      const groups={};
-      parsed.forEach(p=>{
-        const site=SITES.find(s=>s.name.toLowerCase()===p.proj.toLowerCase());
-        const work=p.work?WORKS.find(w=>w.site_id===site.id&&w.name.toLowerCase()===p.work.toLowerCase()):null;
-        const trade=TRADES.find(t=>t.name.toLowerCase()===p.trade.toLowerCase());
-        const key=[p.date,site.id,work?work.id:"",p.hol].join("|");
-        (groups[key]=groups[key]||{report_date:p.date,site_id:site.id,work_item_id:work?work.id:null,
-          supervisor_id:ME.id,is_holiday:p.hol,status:"approved",reviewed_by:ME.id,reviewed_at:new Date().toISOString(),
-          manpower:[],materials:[],equipment:[],progress_note:""}).manpower
-          .push({trade:trade.name,count:p.men,norm_hours:p.nh,ot_hours:p.oh});
-        if(p.rem){ const g=groups[key]; g.progress_note=g.progress_note?g.progress_note+"; "+p.rem:p.rem; }
-      });
-      const payloads=Object.values(groups);
-      for(let i=0;i<payloads.length;i+=50){
-        const {error}=await sb.from("daily_reports").insert(payloads.slice(i,i+50));
-        if(error) throw error;
-      }
-      $("xMsg").innerHTML=`<div class="msg ok">Imported ${parsed.length} manpower rows → ${payloads.length} daily reports across ${projNames.length} project(s).${errs.length?" Skipped: "+errs.length+" row(s).":""} Man-hours and labour cost are now live in the Dashboard and P&L.</div>`;
-      loadBase();
+      const res=await importWorkbook(await f.arrayBuffer(), $("xInto").value||null);
+      $("xMsg").innerHTML=`<div class="msg ok">${res}</div>`;
+      await loadBase();
     }catch(e){ $("xMsg").innerHTML=`<div class="msg err">${esc(e.message||e)}</div>`; }
   };
 }
@@ -888,7 +1307,7 @@ function workerOptions(sel){
   const act=WORKERS.filter(w=>w.active||w.id===sel);
   const byTrade={}; act.forEach(w=>{ (byTrade[w.trade||"Unassigned"]=byTrade[w.trade||"Unassigned"]||[]).push(w); });
   return Object.keys(byTrade).sort().map(t=>`<optgroup label="${esc(t)}">`+
-    byTrade[t].map(w=>`<option value="${w.id}" ${w.id===sel?"selected":""}>${esc(w.name)}${w.emp_no?` (${esc(w.emp_no)})`:""}</option>`).join("")+`</optgroup>`).join("");
+    byTrade[t].map(w=>`<option value="${w.id}" ${w.id===sel?"selected":""}>${w.emp_no?esc(w.emp_no)+" — ":""}${esc(w.name)}</option>`).join("")+`</optgroup>`).join("");
 }
 function mpRow(m){
   m=m||{};
@@ -896,7 +1315,8 @@ function mpRow(m){
     <select class="c1"><option value="">— trade —</option>${tradeOptions(m.trade)}</select>
     <input class="c2" type="number" min="0" step="1" placeholder="Men" value="${m.count??""}">
     <input class="c3" type="number" min="0" step="any" placeholder="Norm hrs" value="${m.norm_hours??m.hours??SET.std_hours}">
-    <input class="c4" type="number" min="0" step="any" placeholder="OT hrs" value="${m.ot_hours||""}">
+    <input class="c4" type="number" min="0" step="any" placeholder="OT 1.5" value="${m.ot_hours||""}">
+    <input class="c5" type="number" min="0" step="any" placeholder="Prem 2.0" value="${m.prem_hours||""}">
     <button type="button" class="x" title="Remove row">×</button></div>`;
 }
 function wkRow(m){
@@ -904,7 +1324,8 @@ function wkRow(m){
   return `<div class="rowline wk" data-kind="wk">
     <select class="c1"><option value="">— worker —</option>${workerOptions(m.worker_id)}</select>
     <input class="c3" type="number" min="0" step="any" placeholder="Norm hrs" value="${m.norm_hours??m.hours??SET.std_hours}">
-    <input class="c4" type="number" min="0" step="any" placeholder="OT hrs" value="${m.ot_hours||""}">
+    <input class="c4" type="number" min="0" step="any" placeholder="OT 1.5" value="${m.ot_hours||""}">
+    <input class="c5" type="number" min="0" step="any" placeholder="Prem 2.0" value="${m.prem_hours||""}">
     <button type="button" class="x" title="Remove row">×</button></div>`;
 }
 function simpleRow(kind,d){
@@ -1003,9 +1424,39 @@ async function pushReport(payload,newPhotos,keep,editId){
     if(error) return {error};
     uploaded.push({path,name:p.name});
   }
-  const body=Object.assign({},payload,{photos:(keep||[]).concat(uploaded)});
-  return editId ? await sb.from("daily_reports").update(body).eq("id",editId)
-                : await sb.from("daily_reports").insert(body);
+  const shots=(keep||[]).concat(uploaded);
+  const body=Object.assign({},payload,shots.length?{photos:shots}:{});
+  const write = b => editId ? sb.from("daily_reports").update(b).eq("id",editId)
+                            : sb.from("daily_reports").insert(b);
+  let res=await write(body);
+  /* photos are optional — if the column is not there yet, save the report anyway */
+  if(res.error && /photos|meta/i.test(res.error.message||"")){
+    const b2=Object.assign({},body);
+    const dropped=[];
+    if(/photos/i.test(res.error.message)){ delete b2.photos; dropped.push("photos"); }
+    if(/meta/i.test(res.error.message)){ delete b2.meta; dropped.push("times and progress"); }
+    res=await write(b2);
+    if(!res.error) res.warn="Report saved, but "+dropped.join(" and ")+" could not be stored — run the update on the Setup tab.";
+  }
+  return res;
+}
+
+/* the daily report drives the work item's own status and dates */
+async function syncWorkItem(payload){
+  const id=payload.work_item_id, m=payload.meta||{};
+  if(!id) return;
+  const w=WORKS.find(x=>x.id===id); if(!w) return;
+  const up={};
+  if(m.work_status && m.work_status!==w.status) up.status=m.work_status;
+  if(m.progress_pct!=null && +m.progress_pct!==+(w.progress_pct||0)) up.progress_pct=+m.progress_pct;
+  if(m.expected_end && m.expected_end!==w.expected_end) up.expected_end=m.expected_end;
+  const st=m.actual_start||w.start_date||payload.report_date;
+  if(st!==w.start_date) up.start_date=st;
+  if(m.work_status==="completed"){ up.end_date=m.actual_end||w.end_date||payload.report_date; if(up.progress_pct==null) up.progress_pct=100; }
+  else if(w.end_date) up.end_date=null;
+  if(!Object.keys(up).length) return;
+  const {error}=await sb.from("work_items").update(up).eq("id",id);
+  if(!error) await loadBase();
 }
 
 /* ---------- draft autosave ---------- */
@@ -1022,12 +1473,14 @@ const clearDraft = () => { try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} 
 function collectForm(){
   const mp=[...$("main").querySelectorAll('[data-kind="mp"].rowline')].map(r=>({
     trade:r.querySelector(".c1").value, count:+r.querySelector(".c2").value||0,
-    norm_hours:+r.querySelector(".c3").value||0, ot_hours:+r.querySelector(".c4").value||0
+    norm_hours:+r.querySelector(".c3").value||0, ot_hours:+r.querySelector(".c4").value||0,
+    prem_hours:+r.querySelector(".c5").value||0
   })).filter(m=>m.trade&&m.count>0);
   const wk=[...$("main").querySelectorAll('[data-kind="wk"].rowline')].map(r=>{
     const id=r.querySelector(".c1").value, w=workerById(id);
-    return {worker_id:id, worker_name:w?w.name:"", trade:w?w.trade:"", count:1,
-      norm_hours:+r.querySelector(".c3").value||0, ot_hours:+r.querySelector(".c4").value||0};
+    return {worker_id:id, worker_name:w?w.name:"", emp_no:w?w.emp_no:"", trade:w?w.trade:"", count:1,
+      norm_hours:+r.querySelector(".c3").value||0, ot_hours:+r.querySelector(".c4").value||0,
+      prem_hours:+r.querySelector(".c5").value||0};
   }).filter(m=>m.worker_id);
   const rd=k=>[...$("main").querySelectorAll(`[data-kind="${k}"].rowline`)].map(r=>({
     a:r.querySelector(".c1").value.trim(), b:r.querySelector(".c2").value, c:r.querySelector(".c3").value})).filter(r=>r.a);
@@ -1036,8 +1489,24 @@ function collectForm(){
     is_holiday:$("eHol").checked, mode:MPMODE, manpower:MPMODE==="worker"?wk:mp,
     materials:rd("mat").map(r=>({name:r.a,qty:+r.b||0,unit:r.c})),
     equipment:rd("eq").map(r=>({name:r.a,qty:+r.b||0,hours:+r.c||0})),
-    progress_note:$("eNote").value.trim()
+    progress_note:$("eNote").value.trim(),
+    meta:{
+      start_time:$("eStart").value||null, end_time:$("eEnd").value||null,
+      break_hours:+$("eBreak").value||0, driver:$("eDriver").value.trim()||null,
+      transport_note:$("eTrips").value.trim()||null,
+      work_status:$("eStage").value, progress_pct:$("ePct").value===""?null:+$("ePct").value,
+      expected_end:$("eExp").value||null,
+      actual_start:$("eStStart")?($("eStStart").value||null):null,
+      actual_end:$("eStEnd")?($("eStEnd").value||null):null
+    }
   };
+}
+/* hours between two clock times, minus the break; handles a night shift crossing midnight */
+function spanHours(a,b,brk){
+  if(!a||!b) return 0;
+  const [h1,m1]=a.split(":").map(Number), [h2,m2]=b.split(":").map(Number);
+  let mins=(h2*60+m2)-(h1*60+m1); if(mins<0) mins+=1440;
+  return Math.max(0, mins/60 - (+brk||0));
 }
 
 async function vEntry(rec){
@@ -1050,6 +1519,7 @@ async function vEntry(rec){
   MPMODE = (src && (src.mode==="worker" || (src.manpower||[]).some(m=>m.worker_id))) ? "worker" : "trade";
   if(MPMODE==="worker" && !WORKERS.length) MPMODE="trade";
 
+  const M=(src&&src.meta)||{};
   const activeSites=SITES.filter(s=>s.active||(editing&&s.id===editing.site_id));
   const mpRows=(src&&(src.manpower||[]).length)
     ? (src.manpower||[]).map(m=>MPMODE==="worker"?wkRow(m):mpRow(m)).join("")
@@ -1062,13 +1532,37 @@ async function vEntry(rec){
       ${draft?`<div class="msg ok" id="dMsgBar">Unsaved draft restored. <button class="btn sec sm" id="dDiscard" style="margin-left:8px">Start fresh</button></div>`:""}
       <div class="f3" style="margin-bottom:10px">
         <div><label>Date</label><input type="date" id="eDate" value="${(src&&src.report_date)||today()}"></div>
-        <div><label>Project</label><select id="eSite">${activeSites.map(s=>`<option value="${s.id}" ${src&&src.site_id===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
+        <div><label>Project</label><select id="eSite">${activeSites.map(s=>`<option value="${s.id}" ${src&&src.site_id===s.id?"selected":""}>${esc(siteLabel(s))}</option>`).join("")}</select></div>
         <div><label>Work</label><select id="eWork"></select></div>
       </div>
       <div class="checkline" style="margin-bottom:16px">
-        <input type="checkbox" id="eHol" ${src&&src.is_holiday?"checked":""}><label for="eHol" style="margin:0;text-transform:none;font-size:14px;color:var(--text)">Sunday / Public holiday (holiday rate ×${SET.holiday_multiplier})</label>
+        <input type="checkbox" id="eHol" ${src&&src.is_holiday?"checked":""}><label for="eHol" style="margin:0;font-size:14px;color:var(--text)">Sunday / public holiday (whole day at ×${SET.holiday_multiplier})</label>
       </div>
-      <fieldset data-kind="mp"><legend>Manpower — standard day ${SET.std_hours} hrs, OT ×${SET.ot_multiplier}</legend>
+      <fieldset><legend>Working time</legend>
+        <div class="f3" style="margin-bottom:12px">
+          <div><label>Start time</label><input type="time" id="eStart" value="${M.start_time||"08:00"}"></div>
+          <div><label>End time</label><input type="time" id="eEnd" value="${M.end_time||"17:00"}"></div>
+          <div><label>Lunch / break (hrs)</label><input type="number" step="any" min="0" id="eBreak" value="${M.break_hours??1}"></div>
+        </div>
+        <div class="f2">
+          <div><label>Lorry driver</label><input id="eDriver" placeholder="Name or vehicle no." value="${esc(M.driver||"")}"></div>
+          <div><label>Trips / remarks on transport</label><input id="eTrips" placeholder="e.g. 2 trips, scaffold to Berth 6" value="${esc(M.transport_note||"")}"></div>
+        </div>
+        <p class="hint" id="eSpan"></p>
+      </fieldset>
+      <fieldset><legend>Progress of this work</legend>
+        <div class="f3" style="margin-bottom:12px">
+          <div><label>Stage</label><select id="eStage">
+            ${[["to_start","To be started"],["ongoing","In progress"],["completed","Completed"]]
+              .map(([v,l])=>`<option value="${v}" ${((M.work_status)||(src&&src.work_status)||"ongoing")===v?"selected":""}>${l}</option>`).join("")}
+          </select></div>
+          <div><label>Progress (%)</label><input type="number" min="0" max="100" step="1" id="ePct" value="${M.progress_pct??""}" placeholder="0 – 100"></div>
+          <div><label>Expected completion</label><input type="date" id="eExp" value="${M.expected_end||""}"></div>
+        </div>
+        <div id="eStageBox"></div>
+        <p class="hint">The stage, progress and dates here update the work itself, so the office sees when each work started and finished under Projects.</p>
+      </fieldset>
+      <fieldset data-kind="mp"><legend>Manpower — Norm 8am–5pm · OT 1.5× 5pm–12am &amp; lunch · Prem 2.0× 12am–8am, Sun/PH</legend>
         <div class="seg" id="mpSeg">
           <button type="button" data-m="trade" class="${MPMODE==="trade"?"on":""}">By trade (count)</button>
           <button type="button" data-m="worker" class="${MPMODE==="worker"?"on":""}">By worker name</button>
@@ -1077,6 +1571,7 @@ async function vEntry(rec){
         <button type="button" class="addrow" style="margin-top:8px">+ Add ${MPMODE==="worker"?"worker":"trade"}</button>
         ${MPMODE==="worker"?`<button type="button" class="addrow" id="mpAll" style="margin-top:6px">+ Add all workers posted to this project</button>
           ${WORKERS.length?"":`<p class="hint">No workers in the register yet — add them under the Workers tab.</p>`}`:""}
+        <div class="costbar" id="mpCost"></div>
       </fieldset>
       <fieldset data-kind="mat"><legend>Materials used / received</legend>
         <div class="rowset">${((src&&src.materials)||[]).map(m=>simpleRow("mat",m)).join("")}</div>
@@ -1097,7 +1592,7 @@ async function vEntry(rec){
     </div>`;
 
   const fillWorks=()=>{
-    const ws=WORKS.filter(w=>w.site_id===$("eSite").value&&w.status!=="completed");
+    const ws=WORKS.filter(w=>w.site_id===$("eSite").value && (w.status!=="completed" || (src&&src.work_item_id===w.id)));
     $("eWork").innerHTML=`<option value="">General</option>`+ws.map(w=>`<option value="${w.id}" ${src&&src.work_item_id===w.id?"selected":""}>${esc(w.name)}</option>`).join("");
   };
   $("eSite").onchange=()=>{ fillWorks(); saveDraft(); };
@@ -1106,7 +1601,39 @@ async function vEntry(rec){
   $("eDate").onchange=()=>{ autoHol(); saveDraft(); };
   if(!src) autoHol();
   $("main").querySelectorAll("fieldset").forEach(wireRowset);
-  $("main").addEventListener("input",saveDraft);
+  function costPreview(){
+    const box=$("mpCost"); if(!box) return;
+    const f=collectForm();
+    const c=repCalc({manpower:f.manpower,is_holiday:f.is_holiday});
+    const unpriced=[...new Set(f.manpower.filter(m=>mpRate(m)<=0).map(m=>m.worker_name||m.trade||"unnamed"))];
+    box.innerHTML=`
+      <div><b>${c.men}</b><span>Men on site</span></div>
+      <div><b>${n1(c.hrs)}</b><span>Man-hours</span></div>
+      ${seeCost()?`<div><b>${money(c.cost)}</b><span>Labour cost today</span></div>`:""}
+      ${(seeCost()&&unpriced.length)?`<div style="flex:1;min-width:180px;color:var(--danger);font-size:12.5px;font-weight:500">
+        No rate set for ${esc(unpriced.slice(0,4).join(", "))}${unpriced.length>4?` +${unpriced.length-4} more`:""} — their hours cost 0.
+        Set a designation under Workers, and a rate under Rates &amp; settings.</div>`:""}`;
+  }
+  function stageBox(){
+    const w=WORKS.find(x=>x.id===$("eWork").value);
+    const st=$("eStage").value;
+    const started=(w&&w.start_date)||$("eDate").value;
+    $("eStageBox").innerHTML = st==="completed"
+      ? `<div class="f2"><div><label>Work started on</label><input type="date" id="eStStart" value="${started}"></div>
+           <div><label>Work completed on</label><input type="date" id="eStEnd" value="${(w&&w.end_date)||$("eDate").value}"></div></div>
+         <p class="hint">Marking it completed closes the work and records these two dates against it, so the office can see the full run from start to finish.</p>`
+      : (w&&w.start_date?`<p class="hint">Started on ${fmtD(w.start_date)}.</p>`:"");
+  }
+  function timeSpan(){
+    const h=spanHours($("eStart").value,$("eEnd").value,$("eBreak").value);
+    $("eSpan").textContent = h?`Working span: ${n1(h)} hours after the break. Enter each man's hours below — they do not have to match this.`:"";
+  }
+  $("eStage").onchange=()=>{ stageBox(); saveDraft(); };
+  $("eWork").addEventListener("change",stageBox);
+  stageBox(); timeSpan();
+  $("main").addEventListener("input",()=>{ saveDraft(); costPreview(); timeSpan(); });
+  $("main").addEventListener("change",costPreview);
+  costPreview();
   if($("dDiscard")) $("dDiscard").onclick=()=>{ clearDraft(); openTab("entry"); };
   if($("eCancel")) $("eCancel").onclick=()=>openTab(ME.role==="admin"?"reports":"mine");
 
@@ -1116,9 +1643,10 @@ async function vEntry(rec){
     if(btn.dataset.m==="worker" && !WORKERS.length){ alert("Add workers to the register first (Workers tab)."); return; }
     const cur=collectForm();
     MPMODE=btn.dataset.m;
-    const keepRows = MPMODE==="worker" ? "" : (cur.manpower||[]).map(m=>mpRow({trade:m.trade,count:m.count||1,norm_hours:m.norm_hours,ot_hours:m.ot_hours})).join("");
+    const keepRows = MPMODE==="worker" ? "" : (cur.manpower||[]).map(m=>mpRow({trade:m.trade,count:m.count||1,norm_hours:m.norm_hours,ot_hours:m.ot_hours,prem_hours:m.prem_hours})).join("");
     const fs=$("main").querySelector('fieldset[data-kind="mp"]');
     fs.querySelector(".rowset").innerHTML = keepRows || (MPMODE==="worker"?wkRow():mpRow());
+    setTimeout(costPreview,0);
     fs.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x.dataset.m===MPMODE));
     const addBtns=fs.querySelectorAll(".addrow");
     addBtns[0].textContent = "+ Add "+(MPMODE==="worker"?"worker":"trade");
@@ -1171,7 +1699,8 @@ async function vEntry(rec){
     const payload={
       report_date:f.report_date, site_id:f.site_id, work_item_id:f.work_item_id,
       supervisor_id: editing?editing.supervisor_id:ME.id, is_holiday:f.is_holiday,
-      manpower:f.manpower, materials:f.materials, equipment:f.equipment, progress_note:f.progress_note
+      manpower:f.manpower, materials:f.materials, equipment:f.equipment, progress_note:f.progress_note,
+      meta:f.meta
     };
     if(editing && editing.status==="rejected") payload.status="submitted";
     $("eSave").disabled=true; $("eMsg").innerHTML=`<div class="msg ok">Saving…</div>`;
@@ -1186,6 +1715,7 @@ async function vEntry(rec){
     try{ res=await pushReport(payload,PHOTOS,KEEP,editing?editing.id:null); }
     catch(e){ res={error:{message:String(e.message||e)}}; }
     $("eSave").disabled=false;
+    if(res.warn) $("eMsg").innerHTML=`<div class="msg err">${esc(res.warn)}</div>`;
     if(res.error){
       if(!editing && /fetch|network|Failed/i.test(res.error.message)){
         const skipped=await queueReport(payload,PHOTOS); clearDraft(); PHOTOS=[];
@@ -1194,6 +1724,7 @@ async function vEntry(rec){
       }
       $("eMsg").innerHTML=`<div class="msg err">${esc(res.error.message)}</div>`; return;
     }
+    await syncWorkItem(payload);
     clearDraft();
     if(editing){ $("eMsg").innerHTML=`<div class="msg ok">Report updated.</div>`; setTimeout(()=>openTab(ME.role==="admin"?"reports":"mine"),900); return; }
     $("eMsg").innerHTML=`<div class="msg ok">Report submitted for ${fmtD(payload.report_date)} — ${esc(siteName(payload.site_id))}. Pending office review.</div>`;
@@ -1215,12 +1746,12 @@ async function vWorkers(){
       <div class="card">
         <h2 style="font-size:18px;margin-bottom:10px">Worker register</h2>
         <div class="f3" style="margin-bottom:10px">
-          <div><label>Full name</label><input id="wName" placeholder="e.g. Rajesh Kumar"></div>
-          <div><label>Work permit / FIN / emp no.</label><input id="wEmp" placeholder="optional"></div>
-          <div><label>Trade</label><select id="wTrade">${TRADES.filter(t=>t.active).map(t=>`<option>${esc(t.name)}</option>`).join("")}</select></div>
+          <div><label>Worker ID</label><input id="wEmp" placeholder="e.g. VEW054" style="text-transform:uppercase"></div>
+          <div><label>Full name</label><input id="wName" placeholder="e.g. Chokkalingam Vinoth"></div>
+          <div><label>Designation</label><select id="wTrade"><option value="">— not set —</option>${TRADES.filter(t=>t.active).map(t=>`<option>${esc(t.name)}</option>`).join("")}</select></div>
         </div>
         <div class="f3" style="margin-bottom:10px">
-          <div><label>Posted to project</label><select id="wSite"><option value="">— none —</option>${SITES.filter(s=>s.active).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+          <div><label>Posted to project</label><select id="wSite"><option value="">— none —</option>${SITES.filter(s=>s.active).map(s=>`<option value="${s.id}">${esc(siteLabel(s))}</option>`).join("")}</select></div>
           ${admin?`<div><label>Own rate (${esc(SET.currency)}/hr, blank = trade rate)</label><input type="number" step="any" min="0" id="wRate" placeholder="0"></div>`:""}
           <div style="display:flex;align-items:end"><button class="btn" id="wAdd" style="width:100%">Add worker</button></div>
         </div>
@@ -1232,7 +1763,7 @@ async function vWorkers(){
         <div class="flexbar">
           <div><label>From</label><input type="date" id="aFrom" value="${dF}"></div>
           <div><label>To</label><input type="date" id="aTo" value="${dT}"></div>
-          <div style="min-width:200px"><label>Project</label><select id="aSite"><option value="">All</option>${SITES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+          <div style="min-width:200px"><label>Project</label><select id="aSite"><option value="">All</option>${SITES.map(s=>`<option value="${s.id}">${esc(siteLabel(s))}</option>`).join("")}</select></div>
           <button class="btn sm" id="aGo">Apply</button>
           <button class="btn sec sm" id="aCsv">Export CSV</button>
         </div>
@@ -1243,16 +1774,27 @@ async function vWorkers(){
 
   function wTable(){
     $("wTbl").innerHTML=`
-      <tr><th>Name</th><th>WP / emp no.</th><th>Trade</th><th>Project</th><th style="text-align:right">Rate</th><th>Status</th>${admin?"<th></th>":""}</tr>
+      <tr><th>ID</th><th>Name</th><th style="min-width:150px">Designation</th><th>Project</th>${seeCost()?`<th style="text-align:right">Rate</th>`:""}<th>Status</th>${admin?"<th></th>":""}</tr>
       ${WORKERS.map(w=>`<tr>
-        <td>${esc(w.name)}</td><td class="mono">${esc(w.emp_no||"—")}</td><td>${esc(w.trade||"—")}</td>
-        <td>${esc(w.site_id?siteName(w.site_id):"—")}</td>
-        <td class="num">${+w.rate>0?money(w.rate):`<span class="muted">trade</span>`}</td>
+        <td class="mono">${esc(w.emp_no||"—")}</td><td>${esc(w.name)}</td>
+        <td><select data-wtr="${w.id}" style="width:100%;padding:5px 8px;font-size:13px"><option value="">— set —</option>${TRADES.filter(t=>t.active||t.name===w.trade).map(t=>`<option ${t.name===w.trade?"selected":""}>${esc(t.name)}</option>`).join("")}</select></td>
+        <td><select data-wst="${w.id}" style="width:100%;padding:5px 8px;font-size:13px"><option value="">— none —</option>${SITES.filter(x=>x.active||x.id===w.site_id).map(x=>`<option value="${x.id}" ${x.id===w.site_id?"selected":""}>${esc(siteLabel(x))}</option>`).join("")}</select></td>
+        ${seeCost()?`<td class="num">${+w.rate>0?money(w.rate):`<span class="muted">trade</span>`}</td>`:""}
         <td><span class="pill ${w.active?"ongoing":"inactive"}">${w.active?"active":"inactive"}</span></td>
         ${admin?`<td style="text-align:right;white-space:nowrap">
           <button class="btn sec sm" data-wtog="${w.id}">${w.active?"Deactivate":"Activate"}</button>
           <button class="btn danger sm" data-wdel="${w.id}">×</button></td>`:""}
       </tr>`).join("")||`<tr><td colspan="7" class="muted">No workers yet.</td></tr>`}`;
+    $("wTbl").querySelectorAll("[data-wtr]").forEach(sel=>sel.onchange=async()=>{
+      const {error}=await sb.from("workers").update({trade:sel.value||null}).eq("id",sel.dataset.wtr);
+      if(error) $("wMsg").innerHTML=`<div class="msg err">${esc(error.message)} — only an admin can change this.</div>`;
+      else { await loadBase(); $("wMsg").innerHTML=`<div class="msg ok">Designation updated.</div>`; }
+    });
+    $("wTbl").querySelectorAll("[data-wst]").forEach(sel=>sel.onchange=async()=>{
+      const {error}=await sb.from("workers").update({site_id:sel.value||null}).eq("id",sel.dataset.wst);
+      if(error) $("wMsg").innerHTML=`<div class="msg err">${esc(error.message)} — only an admin can change this.</div>`;
+      else await loadBase();
+    });
     if(!admin) return;
     $("wTbl").querySelectorAll("[data-wtog]").forEach(b=>b.onclick=async()=>{
       const w=workerById(b.dataset.wtog);
@@ -1269,7 +1811,7 @@ async function vWorkers(){
   $("wAdd").onclick=async()=>{
     const name=$("wName").value.trim();
     if(!name) return $("wMsg").innerHTML=`<div class="msg err">Enter the worker's name.</div>`;
-    const row={name, emp_no:$("wEmp").value.trim()||null, trade:$("wTrade").value, site_id:$("wSite").value||null};
+    const row={name, emp_no:$("wEmp").value.trim().toUpperCase()||null, trade:$("wTrade").value||null, site_id:$("wSite").value||null};
     if(admin) row.rate=+($("wRate").value||0)||0;
     const {error}=await sb.from("workers").insert(row);
     $("wMsg").innerHTML=error?`<div class="msg err">${esc(error.message)}</div>`:`<div class="msg ok">${esc(name)} added.</div>`;
@@ -1286,34 +1828,1032 @@ async function vWorkers(){
         if(!m.worker_id) return;
         const w=workerById(m.worker_id);
         const k=m.worker_id;
-        const o=(by[k]=by[k]||{name:m.worker_name||(w?w.name:"(removed)"),emp:(w&&w.emp_no)||"",trade:m.trade||(w?w.trade:""),days:0,norm:0,ot:0,cost:0,sites:new Set()});
-        const nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, rate=mpRate(m);
-        o.days++; o.norm+=nh; o.ot+=oh; o.cost+=rate*(nh*dayM+oh*otEff); o.sites.add(siteName(r.site_id));
+        const o=(by[k]=by[k]||{name:m.worker_name||(w?w.name:"(removed)"),emp:m.emp_no||(w&&w.emp_no)||"",trade:m.trade||(w?w.trade:""),days:0,norm:0,ot:0,prem:0,cost:0,sites:new Set()});
+        const nh=+(m.norm_hours??m.hours)||0, oh=+m.ot_hours||0, ph=+m.prem_hours||0, rate=mpRate(m);
+        o.days++; o.norm+=nh; o.ot+=oh; o.prem+=ph;
+        o.cost+=rate*(nh*dayM+oh*otEff+ph*(+SET.holiday_multiplier));
+        o.sites.add(siteCode(r.site_id)||siteName(r.site_id));
       });
     });
-    ATT=Object.values(by).sort((a,b)=>b.norm+b.ot-(a.norm+a.ot));
-    const tot=ATT.reduce((a,o)=>({d:a.d+o.days,n:a.n+o.norm,o:a.o+o.ot,c:a.c+o.cost}),{d:0,n:0,o:0,c:0});
+    ATT=Object.values(by).sort((a,b)=>b.norm+b.ot+b.prem-(a.norm+a.ot+a.prem));
+    const tot=ATT.reduce((a,o)=>({d:a.d+o.days,n:a.n+o.norm,o:a.o+o.ot+o.prem,c:a.c+o.cost}),{d:0,n:0,o:0,c:0});
     $("aBody").innerHTML=ATT.length?`
       <div class="board">${[[ATT.length,"Workers on site"],[n1(tot.d),"Man-days"],[n1(tot.n+tot.o),"Man-hours"],[n1(tot.o),"OT hours"]]
-        .concat(ME.role==="admin"?[[money(tot.c),"Labour cost"]]:[])
+        .concat(seeCost()?[[money(tot.c),"Labour cost"]]:[])
         .map(([v,l])=>`<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("")}</div>
       <div class="tblwrap"><table class="tbl">
-        <tr><th>Worker</th><th>WP / emp no.</th><th>Trade</th><th>Projects</th><th style="text-align:right">Days</th><th style="text-align:right">Norm hrs</th><th style="text-align:right">OT hrs</th>${ME.role==="admin"?`<th style="text-align:right">Cost</th>`:""}</tr>
-        ${ATT.map(o=>`<tr><td>${esc(o.name)}</td><td class="mono">${esc(o.emp||"—")}</td><td>${esc(o.trade||"—")}</td>
+        <tr><th>ID</th><th>Worker</th><th>Designation</th><th>Projects</th><th style="text-align:right">Days</th><th style="text-align:right">Norm</th><th style="text-align:right">OT+Prem</th>${seeCost()?`<th style="text-align:right">Cost</th>`:""}</tr>
+        ${ATT.map(o=>`<tr><td class="mono">${esc(o.emp||"—")}</td><td>${esc(o.name)}</td><td>${esc(o.trade||"—")}</td>
           <td style="font-size:12px">${esc([...o.sites].join(", "))}</td>
-          <td class="num">${o.days}</td><td class="num">${n1(o.norm)}</td><td class="num">${n1(o.ot)}</td>
-          ${ME.role==="admin"?`<td class="num">${money(o.cost)}</td>`:""}</tr>`).join("")}
+          <td class="num">${o.days}</td><td class="num">${n1(o.norm)}</td><td class="num">${n1(o.ot+o.prem)}</td>
+          ${seeCost()?`<td class="num">${money(o.cost)}</td>`:""}</tr>`).join("")}
       </table></div>`
       :`<p class="muted">No named-worker attendance in this range.</p>`;
   }
   $("aGo").onclick=att; await att();
   $("aCsv").onclick=()=>{
-    const rows=[["Worker","WP/Emp no","Trade","Projects","Days","Norm hrs","OT hrs","Labour cost"]]
-      .concat(ATT.map(o=>[o.name,o.emp,o.trade,[...o.sites].join(" / "),o.days,o.norm,o.ot,o.cost.toFixed(2)]));
+    const head=["ID","Worker","Designation","Projects","Days","Norm hrs","OT 1.5 hrs","Prem 2.0 hrs"];
+    if(seeCost()) head.push("Labour cost");
+    const rows=[head].concat(ATT.map(o=>{
+      const r=[o.emp,o.name,o.trade,[...o.sites].join(" / "),o.days,o.norm,o.ot,o.prem];
+      if(seeCost()) r.push(o.cost.toFixed(2));
+      return r;
+    }));
     const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
     const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
     a.download=`attendance_${$("aFrom").value}_to_${$("aTo").value}.csv`; a.click();
   };
+}
+
+/* ================= ACCESS CONTROL (admin) ================= */
+const PERM_ROWS=[
+  ["costs","Money — rates, labour cost and totals","Every dollar figure in the app. Off means men and hours only."],
+  ["entry","New daily report","Where the day's manpower, materials and equipment are entered."],
+  ["mine","My reports","Their own past reports, with the office's approve or reject decision."],
+  ["resources","Resources utilised","The day's men, materials and equipment across every project."],
+  ["todo","To-do","Pending items per project. They can tick items done but never delete."],
+  ["workers","Workers","The worker register and attendance summary."],
+  ["addproj","Add project","Lets a supervisor open a new project themselves."]
+];
+async function vAccess(){
+  const sups=PROFILES.filter(x=>x.role!=="admin");
+  let who="";  /* "" = the default for every supervisor */
+  const p=perms();
+  $("main").innerHTML=`
+    <h2 style="font-size:22px;margin-bottom:6px">Access</h2>
+    <p class="muted" style="margin-bottom:18px;font-size:14px">Set what supervisors see. Start with the default that applies to everyone, then open a single person to give them something different. Admins always see everything, and changes take effect the next time that person opens the app.</p>
+    <div class="card" style="margin-bottom:18px">
+      <div style="max-width:420px;margin-bottom:16px">
+        <label>Editing</label>
+        <select id="pmWho">
+          <option value="">Default for all supervisors</option>
+          ${sups.map(x=>`<option value="${x.id}">${esc(x.full_name||"(no name)")}${x.perms?" — custom":""}</option>`).join("")}
+        </select>
+      </div>
+      <table class="tbl" id="pmTbl">
+        <tr><th>Can see</th><th style="width:74px;text-align:right">On</th></tr>
+        ${PERM_ROWS.map(([k,lbl,note])=>`<tr>
+          <td><div class="tt">${lbl}</div><div class="td-meta">${note}</div></td>
+          <td style="text-align:right"><input type="checkbox" data-pm="${k}" ${p[k]?"checked":""} style="width:20px;height:20px;accent-color:var(--green)"></td>
+        </tr>`).join("")}
+      </table>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn" id="pmSave">Save access</button>
+        <button class="btn sec" id="pmSafe">Reset to safe defaults</button>
+        <button class="btn sec hidden" id="pmClear">Use the default instead</button>
+      </div>
+      <div id="pmMsg"></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:16px;margin-bottom:8px">A note on how far this goes</h3>
+      <p class="muted" style="font-size:13.5px">Turning money off hides it everywhere in the interface, and the database refuses to hand cost entries, variations or the P&amp;L to anyone who is not an admin. Rates sit alongside designation names, which supervisors need for the register, so a determined person with developer tools could still read a rate. If that matters for your site, keep the worker register admin-only and let supervisors enter by trade instead.</p>
+    </div>`;
+  function paint(){
+    const person = who ? PROFILES.find(x=>x.id===who) : null;
+    const eff = person ? perms(person) : Object.assign({},PERM_DEFAULT,(SET.perms&&SET.perms.supervisor)||{});
+    $("pmTbl").querySelectorAll("[data-pm]").forEach(c=>c.checked=!!eff[c.dataset.pm]);
+    $("pmClear").classList.toggle("hidden", !(person && person.perms));
+    $("pmMsg").innerHTML = person
+      ? `<div class="msg ok">Editing ${esc(person.full_name||"this person")} only. ${person.perms?"They currently have their own settings.":"They are on the default — saving here creates a setting just for them."}</div>`
+      : "";
+  }
+  $("pmWho").onchange=()=>{ who=$("pmWho").value; paint(); };
+  paint();
+  $("pmSave").onclick=async()=>{
+    const next={};
+    $("pmTbl").querySelectorAll("[data-pm]").forEach(c=>next[c.dataset.pm]=c.checked);
+    let error;
+    if(who){
+      ({error}=await sb.from("profiles").update({perms:next}).eq("id",who));
+    }else{
+      const merged=Object.assign({},SET.perms||{},{supervisor:Object.assign({},PERM_DEFAULT,next)});
+      ({error}=await sb.from("settings").update({perms:merged}).eq("id",1));
+    }
+    if(error){ $("pmMsg").innerHTML=`<div class="msg err">${esc(error.message)} — if it mentions perms, run the update on the Setup tab first.</div>`; return; }
+    await loadBase();
+    const nm = who ? (PROFILES.find(x=>x.id===who)||{}).full_name : "";
+    $("pmMsg").innerHTML=`<div class="msg ok">Saved${nm?" for "+esc(nm):" as the default"}. ${next.costs?"Costing is visible.":"No costing is visible."}</div>`;
+  };
+  $("pmClear").onclick=async()=>{
+    if(!who) return;
+    const {error}=await sb.from("profiles").update({perms:null}).eq("id",who);
+    if(error){ $("pmMsg").innerHTML=`<div class="msg err">${esc(error.message)}</div>`; return; }
+    await loadBase(); paint();
+    $("pmMsg").innerHTML=`<div class="msg ok">Custom settings removed — this person follows the default again.</div>`;
+  };
+  $("pmSafe").onclick=()=>{
+    $("pmTbl").querySelectorAll("[data-pm]").forEach(c=>c.checked=!!PERM_DEFAULT[c.dataset.pm]);
+    void 0;
+    $("pmMsg").innerHTML=`<div class="msg ok">Defaults restored on screen — press Save access to apply.</div>`;
+  };
+}
+
+/* ================= DATABASE SETUP ================= */
+const MIGRATION_SQL = `-- ============================================================
+-- VORTEX SITETRACK v4 MIGRATION
+-- Adds: worker register + attendance, report approval workflow,
+--       DPR photos (storage), variation / VO register.
+-- Run the whole file once in Supabase → SQL Editor. Safe to re-run.
+-- ============================================================
+
+-- ---------- 0. helper: is the caller an active admin? ----------
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin' and coalesce(active, true)
+  );
+$$;
+
+-- ---------- 1. WORKER REGISTER ----------
+create table if not exists public.workers (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  emp_no     text,                                   -- work permit / FIN / employee no.
+  trade      text,                                   -- must match a row in trades.name
+  site_id    uuid references public.sites(id) on delete set null,
+  rate       numeric default 0,                      -- 0 / null = fall back to trade rate
+  active     boolean default true,
+  created_at timestamptz default now()
+);
+create index if not exists workers_site_idx on public.workers(site_id);
+
+alter table public.workers enable row level security;
+
+drop policy if exists workers_select on public.workers;
+create policy workers_select on public.workers
+  for select to authenticated using (true);
+
+-- supervisors may add a man who turns up on site; only admin can edit or remove
+drop policy if exists workers_insert on public.workers;
+create policy workers_insert on public.workers
+  for insert to authenticated with check (true);
+
+drop policy if exists workers_update on public.workers;
+create policy workers_update on public.workers
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists workers_delete on public.workers;
+create policy workers_delete on public.workers
+  for delete to authenticated using (public.is_admin());
+
+-- only admin may set a worker's own pay rate
+create or replace function public.guard_worker_rate()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    if tg_op = 'INSERT' then new.rate := 0; end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_worker_rate on public.workers;
+create trigger trg_guard_worker_rate before insert on public.workers
+  for each row execute function public.guard_worker_rate();
+
+-- ---------- 2. APPROVAL WORKFLOW + PHOTOS ON DAILY REPORTS ----------
+alter table public.daily_reports
+  add column if not exists status      text default 'submitted',
+  add column if not exists reviewed_by uuid references public.profiles(id),
+  add column if not exists reviewed_at timestamptz,
+  add column if not exists review_note text,
+  add column if not exists photos      jsonb default '[]'::jsonb;
+
+update public.daily_reports set status = 'submitted' where status is null;
+
+alter table public.daily_reports drop constraint if exists daily_reports_status_check;
+alter table public.daily_reports add constraint daily_reports_status_check
+  check (status in ('submitted','approved','rejected'));
+
+create index if not exists daily_reports_status_idx on public.daily_reports(status);
+
+-- a supervisor may correct his own report until it is approved; admin may edit anything
+drop policy if exists dr_update on public.daily_reports;
+create policy dr_update on public.daily_reports
+  for update to authenticated
+  using      (public.is_admin() or (supervisor_id = auth.uid() and coalesce(status,'submitted') <> 'approved'))
+  with check (public.is_admin() or (supervisor_id = auth.uid() and coalesce(status,'submitted') <> 'approved'));
+
+drop policy if exists dr_delete on public.daily_reports;
+create policy dr_delete on public.daily_reports
+  for delete to authenticated
+  using (public.is_admin() or (supervisor_id = auth.uid() and coalesce(status,'submitted') = 'submitted'));
+
+-- a supervisor cannot approve his own report; correcting a rejected one re-submits it
+create or replace function public.guard_report_status()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    if old.status = 'rejected' and new.status = 'submitted' then
+      new.reviewed_by := null; new.reviewed_at := null; new.review_note := null;
+    else
+      new.status      := old.status;
+      new.reviewed_by := old.reviewed_by;
+      new.reviewed_at := old.reviewed_at;
+      new.review_note := old.review_note;
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_report_status on public.daily_reports;
+create trigger trg_guard_report_status before update on public.daily_reports
+  for each row execute function public.guard_report_status();
+
+-- ---------- 3. VARIATION / VO REGISTER ----------
+create table if not exists public.variations (
+  id          uuid primary key default gen_random_uuid(),
+  site_id     uuid not null references public.sites(id) on delete cascade,
+  vo_no       text,
+  vo_date     date default current_date,
+  description text,
+  amount      numeric not null default 0,
+  status      text default 'pending' check (status in ('pending','approved','rejected')),
+  created_by  uuid references public.profiles(id) default auth.uid(),
+  created_at  timestamptz default now()
+);
+create index if not exists variations_site_idx on public.variations(site_id);
+
+alter table public.variations enable row level security;
+
+drop policy if exists variations_select on public.variations;
+create policy variations_select on public.variations
+  for select to authenticated using (true);
+
+drop policy if exists variations_write on public.variations;
+create policy variations_write on public.variations
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- ---------- 4. PHOTO STORAGE ----------
+insert into storage.buckets (id, name, public)
+values ('dpr-photos', 'dpr-photos', false)
+on conflict (id) do nothing;
+
+drop policy if exists dpr_photos_read on storage.objects;
+create policy dpr_photos_read on storage.objects
+  for select to authenticated using (bucket_id = 'dpr-photos');
+
+drop policy if exists dpr_photos_write on storage.objects;
+create policy dpr_photos_write on storage.objects
+  for insert to authenticated with check (bucket_id = 'dpr-photos');
+
+drop policy if exists dpr_photos_delete on storage.objects;
+create policy dpr_photos_delete on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'dpr-photos' and (owner = auth.uid() or public.is_admin()));
+
+-- ---------- 5. seed the register from trades already in use (optional) ----------
+-- Nothing is seeded automatically. Add workers in the app under the Workers tab,
+-- or bulk-insert here, e.g.:
+-- insert into public.workers (name, emp_no, trade) values
+--   ('Rajesh Kumar','G1234567X','General Worker'),
+--   ('Anbu Selvan','G7654321Y','Welder');
+
+
+-- ============================================================
+-- VORTEX SITETRACK v5 MIGRATION
+-- Adds: project codes, designations + PCS rate card, premium OT tier,
+--       per-project pending / to-do list, and seeds the 24-man register.
+-- Run AFTER upgrade_v4.sql. Safe to re-run.
+-- ============================================================
+
+-- ---------- 1. PROJECT CODE ----------
+alter table public.sites add column if not exists code text;
+create index if not exists sites_code_idx on public.sites (upper(code));
+
+-- ---------- 2. DESIGNATIONS + RATE CARD (VQ-PCS2407021, 11 Jul 2024) ----------
+-- Normal rate is stored here; OT 1.5x and Premium 2.0x come from settings.
+insert into public.trades (name, rate, sort, active)
+select v.name, v.rate, v.sort, true
+from (values
+  ('Supervisor',18.00,10),('WSHC',18.00,20),('Fire Watchman',16.00,30),
+  ('General Labourer',13.00,40),('Manager',0.00,50),('QS',0.00,60),
+  ('Foreman',0.00,70),('Driver',0.00,80)
+) as v(name,rate,sort)
+where not exists (select 1 from public.trades t where t.name = v.name);
+
+update public.trades t set rate = v.rate
+from (values ('Supervisor',18.00),('WSHC',18.00),('Fire Watchman',16.00),('General Labourer',13.00))
+  as v(name,rate)
+where t.name = v.name and coalesce(t.rate,0) = 0;
+
+update public.settings set ot_multiplier = 1.5, holiday_multiplier = 2.0 where id = 1;
+
+-- ---------- 3. PENDING / TO-DO LIST PER PROJECT ----------
+create table if not exists public.todos (
+  id          uuid primary key default gen_random_uuid(),
+  site_id     uuid references public.sites(id) on delete cascade,
+  title       text not null,
+  detail      text,
+  due_date    date,
+  priority    text default 'normal' check (priority in ('low','normal','high')),
+  status      text default 'open'   check (status in ('open','done')),
+  assigned_to uuid references public.profiles(id),
+  created_by  uuid references public.profiles(id) default auth.uid(),
+  created_at  timestamptz default now(),
+  done_at     timestamptz
+);
+create index if not exists todos_site_idx   on public.todos(site_id);
+create index if not exists todos_status_idx on public.todos(status);
+
+alter table public.todos enable row level security;
+
+drop policy if exists todos_select on public.todos;
+create policy todos_select on public.todos for select to authenticated using (true);
+
+drop policy if exists todos_insert on public.todos;
+create policy todos_insert on public.todos for insert to authenticated with check (true);
+
+-- supervisors may tick items off; only admin can delete
+drop policy if exists todos_update on public.todos;
+create policy todos_update on public.todos for update to authenticated using (true) with check (true);
+
+drop policy if exists todos_delete on public.todos;
+create policy todos_delete on public.todos for delete to authenticated using (public.is_admin());
+
+-- ---------- 4. WORKER REGISTER SEED ----------
+-- ID and name are stored separately. Designation is left blank on purpose —
+-- set it for each man in the app under Workers.
+insert into public.workers (emp_no, name, active) values
+  ('VES021','Muruganantham Muralidharan',      true),
+  ('VES049','Bodavula Rajesh',                 true),
+  ('VES051','Arputhadoss Christy Antony Jose', true),
+  ('VEW004','Ahmed Sumon',                     true),
+  ('VEW012','Jahangir',                        true),
+  ('VEW017','Aravan Arjunan',                  true),
+  ('VEW020','Moorthy Mahendran',               true),
+  ('VEW024','Antony Dismal',                   true),
+  ('VEW031','Phonlamai Adirek',                true),
+  ('VEW034','Ahmed Raju',                      true),
+  ('VEW054','Chokkalingam Vinoth',             true),
+  ('VEW061','Somu Naresh Kumar',               true),
+  ('VEW064','Selvam Aravind',                  true),
+  ('VEW086','Balakrishnan Venkatesh',          true),
+  ('VEW098','Karuppiah Alaguperumal',          true),
+  ('VEW101','Karthikeyan Ragavan',             true),
+  ('VEW102','Ravichandran Sivanantham',        true),
+  ('VEW103','Loskor Juber Ahmed',              true),
+  ('VEW131','Subramaniyan Satheesh Kumar',     true),
+  ('VEW135','Chelladurai Reshman',             true),
+  ('VEW136','Masilamani Iyyappan',             true),
+  ('VTX002','Kumar Udhayaraj',                 true),
+  ('VTX003','Rajaraman Ranjithkumar',          true),
+  ('VTX',   'Arumugam Kumaravel',              true)
+on conflict do nothing;
+
+create index if not exists workers_empno_idx on public.workers (upper(emp_no));
+
+-- ---------- 5. OVERHEAD / GENERAL COST CENTRE ----------
+-- Daily office manpower (Manager, QS) is booked against this pseudo-project.
+insert into public.sites (code, name, client_name, active)
+select 'GEN','General / Overhead (Manager, QS, office)','Vortex Engineering', true
+where not exists (select 1 from public.sites where upper(coalesce(code,'')) = 'GEN');
+
+
+-- ============================================================
+-- VORTEX SITETRACK v6 MIGRATION
+-- Adds admin-controlled visibility, and locks money tables to admins
+-- at the database level. Run AFTER upgrade_v4.sql and upgrade_v5.sql.
+-- Safe to re-run.
+-- ============================================================
+
+-- ---------- 1. WHAT EACH ROLE MAY SEE ----------
+-- Edited from the app under Access. Defaults hide all costing from supervisors.
+alter table public.settings add column if not exists perms jsonb default '{}'::jsonb;
+
+update public.settings
+set perms = jsonb_build_object('supervisor', jsonb_build_object(
+      'costs',   false,
+      'rates',   false,
+      'entry',   true,
+      'mine',    true,
+      'todo',    true,
+      'workers', true,
+      'addproj', true
+    ))
+where id = 1 and (perms is null or perms = '{}'::jsonb);
+
+-- ---------- 2. MONEY TABLES: ADMIN ONLY ----------
+-- Hiding figures in the interface is not enough on its own. These policies mean
+-- the database itself will not hand cost data to a supervisor's session.
+alter table public.project_costs enable row level security;
+
+drop policy if exists project_costs_select on public.project_costs;
+create policy project_costs_select on public.project_costs
+  for select to authenticated using (public.is_admin());
+
+drop policy if exists project_costs_write on public.project_costs;
+create policy project_costs_write on public.project_costs
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists variations_select on public.variations;
+create policy variations_select on public.variations
+  for select to authenticated using (public.is_admin());
+
+-- ---------- 3. WORKER PAY RATES ----------
+-- A supervisor may read the register (he needs names and designations) but the
+-- rate column is only useful to the office, so writing it stays admin-only.
+create or replace function public.guard_worker_rate()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    if tg_op = 'INSERT' then
+      new.rate := 0;
+    else
+      new.rate := old.rate;
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_guard_worker_rate on public.workers;
+create trigger trg_guard_worker_rate before insert or update on public.workers
+  for each row execute function public.guard_worker_rate();
+
+
+-- ============================================================
+-- VORTEX SITETRACK v7 MIGRATION
+-- Adds: working times, lunch, lorry driver, work stage and
+--       start / expected / completion dates on each work.
+-- Run AFTER v4, v5 and v6. Safe to re-run.
+-- ============================================================
+
+-- ---------- 1. EXTRA DETAIL ON EACH DAILY REPORT ----------
+-- One JSON column holds start and end time, break, driver, stage,
+-- progress and expected completion, so future additions need no migration.
+alter table public.daily_reports add column if not exists meta jsonb default '{}'::jsonb;
+
+-- ---------- 2. THE WORK ITSELF ----------
+alter table public.work_items
+  add column if not exists start_date   date,
+  add column if not exists end_date     date,
+  add column if not exists expected_end date,
+  add column if not exists progress_pct numeric;
+
+alter table public.work_items add column if not exists status text default 'ongoing';
+update public.work_items set status = 'ongoing'
+  where status is null or status not in ('to_start','ongoing','completed','on-hold');
+
+alter table public.work_items drop constraint if exists work_items_status_check;
+alter table public.work_items add constraint work_items_status_check
+  check (status in ('to_start','ongoing','completed','on-hold'));
+
+-- ---------- 3. PER-PERSON ACCESS ----------
+-- Null means the person follows the role default set under Access.
+alter table public.profiles add column if not exists perms jsonb;
+
+-- an admin may edit anyone's access; nobody may promote themselves
+drop policy if exists profiles_admin_update on public.profiles;
+create policy profiles_admin_update on public.profiles
+  for update to authenticated
+  using (public.is_admin() or id = auth.uid())
+  with check (public.is_admin() or id = auth.uid());
+
+create or replace function public.guard_profile_fields()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    new.role  := old.role;
+    new.perms := old.perms;
+    new.active := old.active;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_profile_fields on public.profiles;
+create trigger trg_guard_profile_fields before update on public.profiles
+  for each row execute function public.guard_profile_fields();
+
+
+-- ============================================================
+-- VORTEX SITETRACK v8 MIGRATION
+-- Adds the project lifecycle: yet to start / ongoing / completed,
+-- plus JCC and invoice close-out tracking.
+-- Run AFTER v4 to v7. Safe to re-run.
+-- ============================================================
+
+alter table public.sites
+  add column if not exists status            text default 'ongoing',
+  add column if not exists completed_date    date,
+  add column if not exists jcc_submitted     boolean default false,
+  add column if not exists jcc_date          date,
+  add column if not exists invoice_submitted boolean default false,
+  add column if not exists invoice_date      date;
+
+-- existing rows: anything switched off was effectively finished
+update public.sites set status = case when coalesce(active,true) then 'ongoing' else 'completed' end
+where status is null;
+
+alter table public.sites drop constraint if exists sites_status_check;
+alter table public.sites add constraint sites_status_check
+  check (status in ('to_start','ongoing','completed'));
+
+create index if not exists sites_status_idx on public.sites(status);
+
+
+`;
+const ROSTER = [{"emp_no": "VES021", "name": "Muruganantham Muralidharan"}, {"emp_no": "VES049", "name": "Bodavula Rajesh"}, {"emp_no": "VES051", "name": "Arputhadoss Christy Antony Jose"}, {"emp_no": "VEW004", "name": "Ahmed Sumon"}, {"emp_no": "VEW012", "name": "Jahangir"}, {"emp_no": "VEW017", "name": "Aravan Arjunan"}, {"emp_no": "VEW020", "name": "Moorthy Mahendran"}, {"emp_no": "VEW024", "name": "Antony Dismal"}, {"emp_no": "VEW031", "name": "Phonlamai Adirek"}, {"emp_no": "VEW034", "name": "Ahmed Raju"}, {"emp_no": "VEW054", "name": "Chokkalingam Vinoth"}, {"emp_no": "VEW061", "name": "Somu Naresh Kumar"}, {"emp_no": "VEW064", "name": "Selvam Aravind"}, {"emp_no": "VEW086", "name": "Balakrishnan Venkatesh"}, {"emp_no": "VEW098", "name": "Karuppiah Alaguperumal"}, {"emp_no": "VEW101", "name": "Karthikeyan Ragavan"}, {"emp_no": "VEW102", "name": "Ravichandran Sivanantham"}, {"emp_no": "VEW103", "name": "Loskor Juber Ahmed"}, {"emp_no": "VEW131", "name": "Subramaniyan Satheesh Kumar"}, {"emp_no": "VEW135", "name": "Chelladurai Reshman"}, {"emp_no": "VEW136", "name": "Masilamani Iyyappan"}, {"emp_no": "VTX002", "name": "Kumar Udhayaraj"}, {"emp_no": "VTX003", "name": "Rajaraman Ranjithkumar"}, {"emp_no": "VTX", "name": "Arumugam Kumaravel"}];
+const RATECARD = [{"name": "Supervisor", "rate": 18, "sort": 10}, {"name": "WSHC", "rate": 18, "sort": 20}, {"name": "Fire Watchman", "rate": 16, "sort": 30}, {"name": "General Labourer", "rate": 13, "sort": 40}, {"name": "Manager", "rate": 0, "sort": 50}, {"name": "QS", "rate": 0, "sort": 60}, {"name": "Foreman", "rate": 0, "sort": 70}, {"name": "Driver", "rate": 0, "sort": 80}];
+let SCHEMA={v4:true,v5:true,v6:true,v7:true,v8:true};
+
+async function schemaCheck(){
+  const a=await sb.from("daily_reports").select("id,status,review_note,photos").limit(1);
+  SCHEMA.v4 = !a.error;
+  const b=await sb.from("todos").select("id").limit(1);
+  const c=await sb.from("sites").select("code").limit(1);
+  SCHEMA.v5 = !b.error && !c.error;
+  const d=await sb.from("settings").select("perms").eq("id",1).limit(1);
+  SCHEMA.v6 = !d.error;
+  const e=await sb.from("daily_reports").select("meta").limit(1);
+  const f=await sb.from("work_items").select("start_date").limit(1);
+  SCHEMA.v7 = !e.error && !f.error;
+  const g=await sb.from("sites").select("status,jcc_submitted").limit(1);
+  SCHEMA.v8 = !g.error;
+  const bar=$("setupBar");
+  if(SCHEMA.v4 && SCHEMA.v5 && SCHEMA.v6 && SCHEMA.v7 && SCHEMA.v8){ bar.innerHTML=""; return; }
+  if(ME.role!=="admin"){
+    bar.innerHTML=`<div class="setup">Some features are switched off until the office runs the database update. Daily reports still save normally.</div>`;
+    return;
+  }
+  bar.innerHTML=`<div class="setup">
+    <div style="flex:1;min-width:220px"><b>The database is one step behind the app.</b><br>
+      Approvals, photos, project codes and the to-do list stay switched off until the update is run in Supabase.</div>
+    <button class="btn sm" id="setupGo">Show me how</button></div>`;
+  $("setupGo").onclick=()=>openTab("setup");
+}
+
+async function vSetup(){
+  $("main").innerHTML=`
+    <h2 style="font-size:22px;margin-bottom:6px">Database setup</h2>
+    <p class="muted" style="margin-bottom:20px;font-size:14px">The app talks to your Supabase database. When a new version adds a feature, the database needs the matching update — this page tells you what is missing and gives you the exact code to paste.</p>
+    <div class="card" style="margin-bottom:18px">
+      <h3 style="font-size:16px;margin-bottom:12px">Status</h3>
+      <div class="tblwrap"><table class="tbl" id="chkTbl"><tr><td class="muted">Checking…</td></tr></table></div>
+    </div>
+    <div class="card" style="margin-bottom:18px">
+      <h3 style="font-size:16px;margin-bottom:8px">Run the update</h3>
+      <ol style="font-size:14px;padding-left:20px;line-height:2;color:var(--text)">
+        <li>Copy the code below.</li>
+        <li>Open your Supabase project, then <b>SQL Editor</b> → <b>New query</b>.</li>
+        <li>Paste it in and press <b>Run</b>. It is safe to run more than once.</li>
+        <li>Come back here and press <b>Check again</b>.</li>
+      </ol>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn" id="sqlCopy">Copy the code</button>
+        <button class="btn sec" id="sqlRecheck">Check again</button>
+        <button class="btn sec" id="sqlShow">Show / hide code</button>
+      </div>
+      <div id="sqlMsg"></div>
+      <pre class="sql hidden" id="sqlBox"></pre>
+    </div>
+    <div class="card">
+      <h3 style="font-size:16px;margin-bottom:8px">Starter data</h3>
+      <p class="muted" style="font-size:13.5px;margin-bottom:14px">Load the standard Vortex lists. Both skip anything already there, so pressing twice does no harm.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn sec" id="seedWk">Load the 24-man register</button>
+        <button class="btn sec" id="seedRt">Load the PCS rate card</button>
+      </div>
+      <div id="seedMsg"></div>
+    </div>`;
+  $("sqlBox").textContent=MIGRATION_SQL;
+  $("sqlShow").onclick=()=>$("sqlBox").classList.toggle("hidden");
+  $("sqlCopy").onclick=async()=>{
+    try{ await navigator.clipboard.writeText(MIGRATION_SQL);
+      $("sqlMsg").innerHTML=`<div class="msg ok">Copied. Paste it into the Supabase SQL Editor and press Run.</div>`;
+    }catch(e){ $("sqlBox").classList.remove("hidden");
+      $("sqlMsg").innerHTML=`<div class="msg err">Copying was blocked by the browser. The code is shown below — select it all and copy by hand.</div>`; }
+  };
+  $("sqlRecheck").onclick=()=>openTab("setup");
+  $("seedWk").onclick=async()=>{
+    $("seedMsg").innerHTML=`<div class="msg ok">Adding…</div>`;
+    const have=new Set(WORKERS.map(w=>(w.emp_no||"").toUpperCase()));
+    const add=ROSTER.filter(r=>!have.has(r.emp_no));
+    if(!add.length){ $("seedMsg").innerHTML=`<div class="msg ok">All 24 are already in the register.</div>`; return; }
+    const {error}=await sb.from("workers").insert(add);
+    if(error){ $("seedMsg").innerHTML=`<div class="msg err">${esc(error.message)}</div>`; return; }
+    await loadBase();
+    $("seedMsg").innerHTML=`<div class="msg ok">${add.length} worker(s) added. Set each man's designation under Workers — until that is set, his hours cost nothing.</div>`;
+  };
+  $("seedRt").onclick=async()=>{
+    $("seedMsg").innerHTML=`<div class="msg ok">Loading rates…</div>`;
+    const have=new Set(TRADES.map(t=>t.name));
+    const add=RATECARD.filter(r=>!have.has(r.name));
+    let err=null;
+    if(add.length){ const {error}=await sb.from("trades").insert(add); err=error; }
+    for(const r of RATECARD.filter(x=>have.has(x.name) && x.rate>0)){
+      const t=TRADES.find(y=>y.name===r.name);
+      if(t && +t.rate===0) await sb.from("trades").update({rate:r.rate}).eq("id",t.id);
+    }
+    if(err){ $("seedMsg").innerHTML=`<div class="msg err">${esc(err.message)}</div>`; return; }
+    await loadBase();
+    $("seedMsg").innerHTML=`<div class="msg ok">Rate card loaded: Supervisor 18.00, WSHC 18.00, Fire Watchman 16.00, General Labourer 13.00. Manager, QS, Foreman and Driver are waiting for a rate under Rates &amp; settings.</div>`;
+  };
+  const rows=[
+    ["Report approvals, review notes and site photos", SCHEMA.v4, "upgrade_v4"],
+    ["Project codes, to-do list, premium OT", SCHEMA.v5, "upgrade_v5"],
+    ["Access control — who sees costing", SCHEMA.v6, "upgrade_v6"],
+    ["Working times, stages and completion dates", SCHEMA.v7, "upgrade_v7"],
+    ["Project status, JCC and invoice tracking", SCHEMA.v8, "upgrade_v8"],
+    ["Worker register", WORKERS.length>0, WORKERS.length+" men"],
+    ["Designations priced", TRADES.filter(t=>+t.rate>0).length>0, TRADES.filter(t=>+t.rate>0).length+" priced"],
+    ["Workers with a designation set", WORKERS.length>0 && WORKERS.every(w=>w.trade), WORKERS.filter(w=>!w.trade).length+" still blank"]
+  ];
+  $("chkTbl").innerHTML=rows.map(([lbl,ok,note])=>`<tr><td>${lbl}</td>
+    <td style="width:120px"><span class="pill ${ok?"approved":"rejected"}">${ok?"ready":"missing"}</span></td>
+    <td class="muted" style="font-size:12.5px">${esc(String(note))}</td></tr>`).join("");
+}
+
+/* ================= PURCHASE ORDERS → MATERIAL COST ================= */
+const UOMS="LS|NOS|NO|PCS|PC|EA|SET|SETS|BOX|LOT|KG|MT|M|M2|M3|LTR|L|ROLL|BAG|BAGS|DRUM|PAIL|TIN|CTN|UNIT";
+function parsePO(text){
+  const t=text.replace(/\r/g,"");
+  const one=t.replace(/\n+/g," \n ");
+  const grab=(re,d)=>{ const m=one.match(re); return m?m[1].trim():(d||""); };
+  const nums=[...t.matchAll(/TOTAL\s*\$?\s*([\d,]+\.\d{2})/gi)].map(m=>+m[1].replace(/,/g,""));
+  const gstM=t.match(/GST[^\n$]*\$?\s*([\d,]+\.\d{2})/i);
+  const items=[];
+  const re=new RegExp("([\\s\\S]{0,160}?)([\\d,]+\\.\\d{2})\\s+("+UOMS+")\\s+([\\d,]+\\.\\d{2})(?:\\s+[\\d,.%]+)?\\s+([\\d,]+\\.\\d{2})","gi");
+  let m; while((m=re.exec(t))){
+    let desc=m[1].replace(/\s+/g," ");
+    /* drop the column headings and the line number that sit in front of the description */
+    const cut=desc.toUpperCase().lastIndexOf("AMOUNT");
+    if(cut>=0) desc=desc.slice(cut+6);
+    desc=desc.replace(/^[\s|]*\d{1,3}[\s.)]+/,"").replace(/^(NO|PICTURE|DESCRIPTION|QTY|UOM|UNIT PRICE|DISCOUNT)\b\s*/gi,"").trim();
+    items.push({desc:desc.slice(0,140), qty:+m[2].replace(/,/g,""), uom:m[3].toUpperCase(),
+      unit:+m[4].replace(/,/g,""), amount:+m[5].replace(/,/g,"")});
+  }
+  const remarks=(t.match(/REMARKS:?\s*([\s\S]{0,180})/i)||[])[1]||"";
+  return {
+    po: grab(/ORDER\s*NO\.?\s*:?\s*([A-Z0-9][A-Z0-9\- ]*?(?:\s*R\d+)?)\s*(?:\n|ORDER\s*DATE)/i),
+    date: grab(/ORDER\s*DATE\s*:?\s*(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})/i),
+    supplier: grab(/SEND\s*TO\s*:?\s*([^\n]{3,70})/i),
+    projectNo: grab(/\b(PJOR\s*\d{4,})\b/i) || grab(/SO\/?PROJECT\s*NO\.?\s*:?\s*([A-Z]{2,}[A-Z0-9\-\/]{2,})/i),
+    ref: grab(/(VQ-[A-Z0-9]+)/i),
+    site: grab(/SHIPMENT\s*ADDRESS[^\n]*\n?\s*([^\n]{5,60})/i),
+    total: nums.length?Math.max(...nums):0,
+    gst: gstM?+gstM[1].replace(/,/g,""):0,
+    items, remarks:remarks.replace(/\s+/g," ").trim()
+  };
+}
+async function pdfText(file){
+  const buf=await file.arrayBuffer();
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const doc=await pdfjsLib.getDocument({data:buf}).promise;
+  let out="";
+  for(let i=1;i<=doc.numPages;i++){
+    const pg=await doc.getPage(i), c=await pg.getTextContent();
+    let lastY=null, line="";
+    c.items.forEach(it=>{
+      const y=Math.round(it.transform[5]);
+      if(lastY!==null && Math.abs(y-lastY)>3){ out+=line.trim()+"\n"; line=""; }
+      line+=it.str+" "; lastY=y;
+    });
+    out+=line.trim()+"\n";
+  }
+  return out;
+}
+function guessSite(po){
+  const hay=[po.projectNo,po.ref,po.remarks,po.site].join(" ").toUpperCase();
+  let best=null;
+  SITES.forEach(x=>{
+    const code=(x.code||"").toUpperCase();
+    if(code && hay.includes(code)) best=best||x;
+  });
+  if(!best) SITES.forEach(x=>{
+    const words=(x.name||"").toUpperCase().split(/[^A-Z0-9]+/).filter(w=>w.length>4);
+    if(words.some(w=>hay.includes(w))) best=best||x;
+  });
+  return best;
+}
+
+async function vPO(){
+  $("main").innerHTML=`
+    <h2 style="font-size:22px;margin-bottom:6px">Purchase orders</h2>
+    <p class="muted" style="margin-bottom:18px;font-size:14px">Drop in a Vortex PO and the supplier, order number, items and total are read off it. Check what was read, choose the project, and it books as a material cost on that project's P&amp;L.</p>
+    <div class="card" style="margin-bottom:18px">
+      <label class="filedrop" for="poFile">Choose one or more purchase order PDFs<input id="poFile" type="file" accept="application/pdf" multiple></label>
+      <div id="poMsg"></div>
+      <div id="poForm"></div>
+    </div>
+    <div class="card">
+      <div class="flexbar" style="margin-bottom:12px">
+        <div style="min-width:220px"><label>Project</label><select id="poSiteF"><option value="">All projects</option>${SITES.map(x=>`<option value="${x.id}">${esc(siteLabel(x))}</option>`).join("")}</select></div>
+        <button class="btn sec sm" id="poRef">Refresh</button>
+      </div>
+      <div id="poList"></div>
+    </div>`;
+  $("poSiteF").onchange=listPOs; $("poRef").onclick=listPOs; listPOs();
+
+  $("poFile").onchange=async e=>{
+    const files=[...e.target.files]; if(!files.length) return;
+    $("poMsg").innerHTML=`<div class="msg ok">Reading ${files.length} file(s)…</div>`;
+    const read=[];
+    for(const f of files){
+      try{ const po=parsePO(await pdfText(f)); po.file=f.name; read.push(po); }
+      catch(err){ read.push({file:f.name,failed:String(err.message||err),items:[],total:0,gst:0}); }
+    }
+    const ok=read.filter(x=>!x.failed);
+    if(!ok.length){ $("poMsg").innerHTML=`<div class="msg err">None of those could be read. If they are scans rather than real PDFs, enter the figures by hand under P&amp;L.</div>`; $("poForm").innerHTML=""; return; }
+    $("poMsg").innerHTML=`<div class="msg ok">Read ${ok.length} of ${read.length} file(s). Check each one, then book them all in one go.</div>
+      ${read.filter(x=>x.failed).map(x=>`<div class="msg err">${esc(x.file)} could not be read.</div>`).join("")}`;
+    renderPOForm(ok);
+  };
+
+  function renderPOForm(list){
+    $("poForm").innerHTML=list.map((po,ix)=>{
+      const guess=guessSite(po);
+      const desc=po.items.length?po.items.map(i=>i.desc).join("; "):po.remarks;
+      const dt=(()=>{const m=(po.date||"").match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+        return m?`${m[3].length===2?"20"+m[3]:m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:today();})();
+      const net=(po.total-po.gst)>0?(po.total-po.gst):po.total;
+      return `<div class="card" style="margin-top:14px;box-shadow:none;background:var(--paper)" data-po="${ix}">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <span class="code">${esc(po.po||"PO ?")}</span>
+        <b style="font-size:15px">${esc(po.supplier||"Supplier not read")}</b>
+        <span class="muted" style="font-size:12.5px">${esc(po.file)}</span>
+        <button class="btn sec sm" style="margin-left:auto" data-podrop="${ix}">Remove</button>
+      </div>
+      ${po.items.length?`<div class="tblwrap" style="margin-bottom:12px"><table class="tbl">
+        <tr><th>Description read from the PO</th><th style="text-align:right">Qty</th><th>UOM</th><th style="text-align:right">Unit</th><th style="text-align:right">Amount</th></tr>
+        ${po.items.map(i=>`<tr><td>${esc(i.desc)}</td><td class="num">${i.qty}</td><td>${esc(i.uom)}</td><td class="num">${money(i.unit)}</td><td class="num">${money(i.amount)}</td></tr>`).join("")}
+      </table></div>`:`<div class="msg err">No line items could be read from this one — fill the amount in by hand.</div>`}
+      <div class="f3" style="margin-bottom:10px">
+        <div><label>Project to charge</label><select class="poSite">${SITES.map(x=>`<option value="${x.id}" ${guess&&guess.id===x.id?"selected":""}>${esc(siteLabel(x))}</option>`).join("")}</select></div>
+        <div><label>Category</label><select class="poCat">${COST_CATS.map(c=>`<option ${c==="Material"?"selected":""}>${c}</option>`).join("")}</select></div>
+        <div><label>Cost date</label><input type="date" class="poDate" value="${dt}"></div>
+      </div>
+      <div class="f2" style="margin-bottom:10px">
+        <div><label>Amount before GST (${esc(SET.currency)})</label><input type="number" step="0.01" class="poAmt" value="${net.toFixed(2)}"></div>
+        <div><label>Your reference</label><input class="poRefx" value="${esc([po.ref,po.projectNo,po.remarks].filter(Boolean).join(" · ")).slice(0,150)}"></div>
+      </div>
+      <div><label>Description on the P&amp;L</label>
+        <input class="poDesc" value="${esc((po.po?po.po+" · ":"")+(po.supplier?po.supplier+" · ":"")+desc).slice(0,220)}"></div>
+    </div>`;}).join("")+`
+      <div class="costbar" style="margin-top:14px">
+        <div><b id="poTot">—</b><span>Total to book</span></div>
+        <div><b>${list.length}</b><span>Purchase orders</span></div>
+        <div style="flex:1;text-align:right"><button class="btn" id="poSave">Book all as costs</button></div>
+      </div>
+      <div id="poSaveMsg"></div>`;
+
+    const tot=()=>{ let t=0; $("poForm").querySelectorAll(".poAmt").forEach(i=>t+=+i.value||0);
+      $("poTot").textContent=money(t); };
+    $("poForm").addEventListener("input",tot); tot();
+    $("poForm").querySelectorAll("[data-podrop]").forEach(b=>b.onclick=()=>{
+      list.splice(+b.dataset.podrop,1);
+      if(!list.length){ $("poForm").innerHTML=""; return; }
+      renderPOForm(list);
+    });
+    $("poSave").onclick=async()=>{
+      const cards=[...$("poForm").querySelectorAll("[data-po]")];
+      const rows=cards.map(c=>({
+        site_id:c.querySelector(".poSite").value, category:c.querySelector(".poCat").value,
+        cost_date:c.querySelector(".poDate").value, amount:+c.querySelector(".poAmt").value||0,
+        description:`${c.querySelector(".poDesc").value.trim()}${c.querySelector(".poRefx").value.trim()?" [ref "+c.querySelector(".poRefx").value.trim()+"]":""}`.slice(0,400)
+      })).filter(r=>r.amount>0);
+      if(!rows.length){ $("poSaveMsg").innerHTML=`<div class="msg err">Every amount is zero — nothing to book.</div>`; return; }
+      $("poSave").disabled=true;
+      const {error}=await sb.from("project_costs").insert(rows);
+      $("poSave").disabled=false;
+      if(error){ $("poSaveMsg").innerHTML=`<div class="msg err">${esc(error.message)}</div>`; return; }
+      $("poSaveMsg").innerHTML=`<div class="msg ok">Booked ${rows.length} cost entr${rows.length>1?"ies":"y"} totalling ${money(rows.reduce((a,r)=>a+r.amount,0))}.</div>`;
+      $("poFile").value=""; $("poForm").innerHTML=""; listPOs();
+    };
+  }
+
+  async function listPOs(){
+    let q=sb.from("project_costs").select("*").order("cost_date",{ascending:false}).limit(60);
+    if($("poSiteF").value) q=q.eq("site_id",$("poSiteF").value);
+    const {data,error}=await q;
+    if(error){ $("poList").innerHTML=`<div class="msg err">${esc(error.message)}</div>`; return; }
+    const rows=(data||[]).filter(c=>/PO\d|\[ref/i.test(c.description||""));
+    $("poList").innerHTML=`<h3 style="font-size:16px;margin-bottom:10px">Costs booked from purchase orders</h3>
+      ${rows.length?`<div class="tblwrap"><table class="tbl">
+        <tr><th>Date</th><th>Project</th><th>Category</th><th>Description</th><th style="text-align:right">Amount</th><th></th></tr>
+        ${rows.map(c=>`<tr><td class="mono">${fmtD(c.cost_date)}</td><td>${esc(siteCode(c.site_id)||siteName(c.site_id))}</td>
+          <td>${esc(c.category)}</td><td style="font-size:13px">${esc(c.description||"")}</td>
+          <td class="num">${money(c.amount)}</td>
+          <td style="text-align:right"><button class="btn danger sm" data-pod="${c.id}">×</button></td></tr>`).join("")}
+        <tfoot><tr><td colspan="4">Total</td><td class="num">${money(rows.reduce((a,c)=>a+(+c.amount||0),0))}</td><td></td></tr></tfoot>
+      </table></div>`:`<p class="muted">Nothing booked from a PO yet.</p>`}`;
+    $("poList").querySelectorAll("[data-pod]").forEach(b=>b.onclick=async()=>{
+      if(!confirm("Remove this cost entry?"))return;
+      await sb.from("project_costs").delete().eq("id",b.dataset.pod); listPOs();
+    });
+  }
+}
+
+/* ================= RESOURCES UTILISED ================= */
+async function vResources(){
+  $("main").innerHTML=`
+    <h2 style="font-size:22px;margin-bottom:6px">Resources utilised</h2>
+    <p class="muted" style="margin-bottom:18px;font-size:14px">Everything booked on a given day — who was on site, what was used and what plant ran, across every project.</p>
+    <div class="flexbar">
+      <div><label>Date</label><input type="date" id="reDate" value="${today()}"></div>
+      <div style="min-width:220px"><label>Project</label><select id="reSite"><option value="">All projects</option>${SITES.map(x=>`<option value="${x.id}">${esc(siteLabel(x))}</option>`).join("")}</select></div>
+      <button class="btn sm" id="reGo">Show</button>
+      <button class="btn sec sm" id="rePrev">◀ Previous day</button>
+      <button class="btn sec sm" id="reToday">Today</button>
+      <button class="btn sec sm" id="reNext">Next day ▶</button>
+      <button class="btn sec sm" id="reCsv">Export CSV</button>
+    </div>
+    <div id="reBody"></div>`;
+
+  const shift=n=>{ const d=new Date($("reDate").value+"T00:00:00"); d.setDate(d.getDate()+n);
+    $("reDate").value=d.toISOString().slice(0,10); render(); };
+  $("reGo").onclick=render; $("reDate").onchange=render;
+  $("rePrev").onclick=()=>shift(-1); $("reNext").onclick=()=>shift(1);
+  $("reToday").onclick=()=>{ $("reDate").value=today(); render(); };
+
+  let FLAT=[];
+  async function render(){
+    const d=$("reDate").value;
+    const reps=await fetchReports(d,d,$("reSite").value||null,{costable:true});
+    if(!reps.length){
+      FLAT=[];
+      $("reBody").innerHTML=`<div class="card"><p class="muted">Nothing booked on ${fmtD(d)}. Either no work ran, or the reports have not been submitted yet.</p></div>`;
+      return;
+    }
+    /* totals across the whole day */
+    let men=0,hrs=0,cost=0; const byTrade={}, mats={}, eqp={}, sites={};
+    reps.forEach(r=>{
+      const c=repCalc(r); men+=c.men; hrs+=c.hrs; cost+=c.cost;
+      const S=(sites[r.site_id]=sites[r.site_id]||{men:0,hrs:0,cost:0,trades:{},named:[],mats:[],eqp:[],works:[],notes:[]});
+      S.men+=c.men; S.hrs+=c.hrs; S.cost+=c.cost;
+      const m2=r.meta||{};
+      S.works.push({work:workName(r.work_item_id),stage:{to_start:"To be started",ongoing:"In progress",completed:"Completed"}[m2.work_status]||"",
+        pct:m2.progress_pct, time:(m2.start_time&&m2.end_time)?`${m2.start_time}–${m2.end_time}`:"", driver:m2.driver||"", sup:profName(r.supervisor_id)});
+      if(r.progress_note) S.notes.push(r.progress_note);
+      (r.manpower||[]).forEach(m=>{
+        const cnt=+m.count||0, h=cnt*((+(m.norm_hours??m.hours)||0)+(+m.ot_hours||0)+(+m.prem_hours||0));
+        const t=m.trade||"Not set";
+        byTrade[t]=(byTrade[t]||{men:0,hrs:0}); byTrade[t].men+=cnt; byTrade[t].hrs+=h;
+        S.trades[t]=(S.trades[t]||{men:0,hrs:0}); S.trades[t].men+=cnt; S.trades[t].hrs+=h;
+        if(m.worker_id) S.named.push({emp:m.emp_no||"",name:m.worker_name||"",trade:t,
+          nh:+(m.norm_hours??m.hours)||0,oh:+m.ot_hours||0,ph:+m.prem_hours||0});
+        FLAT.push(["Manpower",siteCode(r.site_id)||siteName(r.site_id),m.worker_name||t,t,cnt,h,""]);
+      });
+      (r.materials||[]).forEach(x=>{
+        const k=(x.name||"").trim()+"||"+(x.unit||"");
+        mats[k]=(mats[k]||0)+(+x.qty||0);
+        S.mats.push(x); FLAT.push(["Material",siteCode(r.site_id)||siteName(r.site_id),x.name,"",+x.qty||0,"",x.unit||""]);
+      });
+      (r.equipment||[]).forEach(x=>{
+        const k=(x.name||"").trim();
+        eqp[k]=eqp[k]||{qty:0,hrs:0}; eqp[k].qty+=(+x.qty||0); eqp[k].hrs+=(+x.hours||0);
+        S.eqp.push(x); FLAT.push(["Equipment",siteCode(r.site_id)||siteName(r.site_id),x.name,"",+x.qty||0,+x.hours||0,""]);
+      });
+    });
+
+    const stat=(v,l)=>`<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+    const matRows=Object.entries(mats).map(([k,q])=>{const [n,u]=k.split("||");return `<tr><td>${esc(n)}</td><td class="num">${n1(q)}</td><td>${esc(u||"")}</td></tr>`;}).join("");
+    const eqRows=Object.entries(eqp).map(([n,v])=>`<tr><td>${esc(n)}</td><td class="num">${n1(v.qty)}</td><td class="num">${v.hrs?n1(v.hrs):""}</td></tr>`).join("");
+
+    $("reBody").innerHTML=`
+      <div class="board">
+        ${stat(Object.keys(sites).length,"Projects running")}
+        ${stat(men,"Men deployed")}
+        ${stat(n1(hrs),"Man-hours")}
+        ${stat(Object.keys(eqp).length,"Equipment items")}
+        ${seeCost()?stat(money(cost),"Labour cost"):""}
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start;margin-bottom:18px">
+        <div class="card"><h3 style="font-size:16px;margin-bottom:10px">Manpower by designation</h3>
+          <div class="tblwrap"><table class="tbl">
+            <tr><th>Designation</th><th style="text-align:right">Men</th><th style="text-align:right">Man-hours</th></tr>
+            ${Object.entries(byTrade).sort((a,b)=>b[1].men-a[1].men).map(([t,v])=>
+              `<tr><td>${esc(t)}${t==="Not set"?` <span class="pill rejected">no rate</span>`:""}</td><td class="num">${v.men}</td><td class="num">${n1(v.hrs)}</td></tr>`).join("")}
+            <tfoot><tr><td>Total</td><td class="num">${men}</td><td class="num">${n1(hrs)}</td></tr></tfoot>
+          </table></div></div>
+        <div class="card"><h3 style="font-size:16px;margin-bottom:10px">Materials &amp; equipment</h3>
+          ${matRows?`<div class="tblwrap" style="margin-bottom:14px"><table class="tbl">
+            <tr><th>Material</th><th style="text-align:right">Qty</th><th>Unit</th></tr>${matRows}</table></div>`:`<p class="muted" style="font-size:13.5px;margin-bottom:12px">No materials recorded.</p>`}
+          ${eqRows?`<div class="tblwrap"><table class="tbl">
+            <tr><th>Equipment</th><th style="text-align:right">Qty</th><th style="text-align:right">Hours</th></tr>${eqRows}</table></div>`:`<p class="muted" style="font-size:13.5px">No equipment recorded.</p>`}
+        </div>
+      </div>
+      ${Object.keys(sites).map(sid=>{const S=sites[sid];return `
+        <div class="card" style="margin-bottom:14px">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+            ${siteCode(sid)?`<span class="code">${esc(siteCode(sid))}</span>`:""}
+            <h3 style="font-size:17px">${esc(siteName(sid))}</h3>
+            <span class="muted" style="font-size:13px">${S.men} men · ${n1(S.hrs)} man-hours${seeCost()?` · ${money(S.cost)}`:""}</span>
+          </div>
+          <div class="tblwrap" style="margin-bottom:12px"><table class="tbl">
+            <tr><th>Work</th><th>Stage</th><th style="text-align:right">Progress</th><th>Time on site</th><th>Lorry driver</th><th>Supervisor</th></tr>
+            ${S.works.map(w=>`<tr><td>${esc(w.work)}</td><td>${esc(w.stage||"—")}</td>
+              <td class="num">${w.pct!=null?w.pct+"%":"—"}</td><td class="mono">${esc(w.time||"—")}</td>
+              <td>${esc(w.driver||"—")}</td><td>${esc(w.sup)}</td></tr>`).join("")}
+          </table></div>
+          ${S.named.length?`<div class="tblwrap" style="margin-bottom:12px"><table class="tbl">
+            <tr><th>ID</th><th>Worker</th><th>Designation</th><th style="text-align:right">Norm</th><th style="text-align:right">OT 1.5</th><th style="text-align:right">Prem 2.0</th></tr>
+            ${S.named.map(w=>`<tr><td class="mono">${esc(w.emp||"—")}</td><td>${esc(w.name)}</td><td>${esc(w.trade)}</td>
+              <td class="num">${w.nh}</td><td class="num">${w.oh||""}</td><td class="num">${w.ph||""}</td></tr>`).join("")}
+          </table></div>`:`<p class="muted" style="font-size:13px;margin-bottom:10px">Entered by trade count — ${Object.entries(S.trades).map(([t,v])=>`${v.men} × ${esc(t)}`).join(", ")}.</p>`}
+          ${(S.mats.length||S.eqp.length)?`<div class="f2">
+            <div>${S.mats.length?`<b style="font-size:13px">Materials</b><ul style="font-size:13.5px;padding-left:18px;margin-top:5px">${S.mats.map(m=>`<li>${esc(m.name)} — ${n1(m.qty)} ${esc(m.unit||"")}</li>`).join("")}</ul>`:""}</div>
+            <div>${S.eqp.length?`<b style="font-size:13px">Equipment</b><ul style="font-size:13.5px;padding-left:18px;margin-top:5px">${S.eqp.map(m=>`<li>${esc(m.name)} — ${n1(m.qty)}${m.hours?` · ${n1(m.hours)} hrs`:""}</li>`).join("")}</ul>`:""}</div>
+          </div>`:""}
+          ${S.notes.length?`<div class="note">${S.notes.map(esc).join("<br>")}</div>`:""}
+        </div>`;}).join("")}`;
+  }
+  $("reCsv").onclick=()=>{
+    if(!FLAT.length) return;
+    const rows=[["Type","Project","Item","Designation","Qty / men","Hours","Unit"]].concat(FLAT);
+    const csv=rows.map(r=>r.map(c=>`"${String(c==null?"":c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.download=`resources_${$("reDate").value}.csv`; a.click();
+  };
+  await render();
+}
+
+/* ================= PENDING / TO-DO PER PROJECT ================= */
+async function vTodo(){
+  const admin=ME.role==="admin";
+  const act=SITES.filter(x=>x.active);
+  $("main").innerHTML=`
+    <div class="card" style="margin-bottom:16px">
+      <h2 style="font-size:18px;margin-bottom:12px">Add a pending item</h2>
+      <div class="f3" style="margin-bottom:10px">
+        <div><label>Project</label><select id="tdSite">${act.map(x=>`<option value="${x.id}">${esc(siteLabel(x))}</option>`).join("")}</select></div>
+        <div><label>Target date</label><input type="date" id="tdDue"></div>
+        <div><label>Priority</label><select id="tdPri"><option value="normal">Normal</option><option value="high">Urgent</option><option value="low">Low</option></select></div>
+      </div>
+      <div class="f2" style="margin-bottom:10px">
+        <div><label>What is pending</label><input id="tdTitle" placeholder="e.g. Submit RA/MS for tank farm painting"></div>
+        <div><label>Assign to</label><select id="tdWho"><option value="">— anyone —</option>${PROFILES.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.full_name||"(no name)")}</option>`).join("")}</select></div>
+      </div>
+      <div style="margin-bottom:10px"><label>Detail (optional)</label><input id="tdDet" placeholder="Reference, contact person, what is blocking it"></div>
+      <button class="btn" id="tdAdd">Add to list</button><div id="tdMsg"></div>
+    </div>
+    <div class="flexbar" style="margin-bottom:12px">
+      <div style="min-width:220px"><label>Show project</label><select id="tdFil"><option value="">All projects</option>${SITES.map(x=>`<option value="${x.id}">${esc(siteLabel(x))}</option>`).join("")}</select></div>
+      <div class="checkline" style="min-width:auto"><input type="checkbox" id="tdDone"><label for="tdDone" style="margin:0;text-transform:none;font-size:13px;color:var(--text)">Show completed</label></div>
+    </div>
+    <div id="tdList"></div>`;
+
+  $("tdAdd").onclick=async()=>{
+    const title=$("tdTitle").value.trim();
+    if(!title) return $("tdMsg").innerHTML=`<div class="msg err">Write what is pending.</div>`;
+    const {error}=await sb.from("todos").insert({
+      site_id:$("tdSite").value||null, title, detail:$("tdDet").value.trim()||null,
+      due_date:$("tdDue").value||null, priority:$("tdPri").value, assigned_to:$("tdWho").value||null});
+    if(error) return $("tdMsg").innerHTML=`<div class="msg err">${esc(error.message)}</div>`;
+    $("tdTitle").value=""; $("tdDet").value=""; $("tdMsg").innerHTML=`<div class="msg ok">Added.</div>`;
+    render();
+  };
+  $("tdFil").onchange=render; $("tdDone").onchange=render;
+
+  async function render(){
+    let q=sb.from("todos").select("*").order("due_date",{ascending:true,nullsFirst:false}).order("created_at",{ascending:false});
+    if($("tdFil").value) q=q.eq("site_id",$("tdFil").value);
+    if(!$("tdDone").checked) q=q.eq("status","open");
+    const {data,error}=await q;
+    if(error){ $("tdList").innerHTML=`<div class="msg err">${esc(error.message)} — run upgrade_v5.sql in Supabase.</div>`; return; }
+    const rows=data||[];
+    if(!rows.length){ $("tdList").innerHTML=`<p class="muted">Nothing pending. </p>`; return; }
+    const bySite={}; rows.forEach(t=>{ (bySite[t.site_id||"none"]=bySite[t.site_id||"none"]||[]).push(t); });
+    const todayStr=today();
+    $("tdList").innerHTML=Object.keys(bySite).map(k=>{
+      const list=bySite[k], open=list.filter(t=>t.status==="open").length;
+      return `<div class="card" style="margin-bottom:14px">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+          ${k!=="none"&&siteCode(k)?`<span class="code">${esc(siteCode(k))}</span>`:""}
+          <h3 style="font-size:17px">${k==="none"?"Not linked to a project":esc(siteName(k))}</h3>
+          <span class="muted" style="font-size:13px">${open} open</span>
+        </div>
+        ${list.map(t=>{
+          const late = t.status==="open" && t.due_date && t.due_date<todayStr;
+          return `<div class="todo ${t.status==="done"?"done":""}">
+            <input type="checkbox" data-tdk="${t.id}" ${t.status==="done"?"checked":""}>
+            <div style="flex:1">
+              <div class="tt">${esc(t.title)}</div>
+              ${t.detail?`<div class="td-meta">${esc(t.detail)}</div>`:""}
+              <div class="td-meta">
+                ${t.due_date?`<span style="${late?"color:var(--red);font-weight:600":""}">${late?"OVERDUE · ":""}${fmtD(t.due_date)}</span> · `:""}
+                ${t.assigned_to?esc(profName(t.assigned_to))+" · ":""}
+                ${t.priority!=="normal"?`<span class="pill ${t.priority}">${t.priority==="high"?"Urgent":"Low"}</span>`:""}
+              </div>
+            </div>
+            ${ME.role==="admin"?`<button class="btn danger sm" data-tdd="${t.id}">×</button>`:""}
+          </div>`;
+        }).join("")}
+      </div>`;
+    }).join("");
+
+    $("tdList").querySelectorAll("[data-tdk]").forEach(cb=>cb.onchange=async()=>{
+      const done=cb.checked;
+      await sb.from("todos").update({status:done?"done":"open",done_at:done?new Date().toISOString():null}).eq("id",cb.dataset.tdk);
+      render();
+    });
+    $("tdList").querySelectorAll("[data-tdd]").forEach(b=>b.onclick=async()=>{
+      if(!confirm("Delete this item?"))return;
+      await sb.from("todos").delete().eq("id",b.dataset.tdd); render();
+    });
+  }
+  await render();
 }
 
 /* ================= SUPERVISOR: MY REPORTS ================= */
